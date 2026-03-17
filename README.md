@@ -1,5 +1,8 @@
 # 神奈川県 光化学オキシダント 監視ダッシュボード
 
+本ダッシュボードは、[photochemistry/airpollutionwatch](https://github.com/photochemistry/airpollutionwatch) が提供する **airpollutionwatch API** をフロントエンドから利用するサンプル兼運用ツールです。  
+API 側の実装・エンドポイント仕様・データ形式などは airpollutionwatch 本体のリポジトリを参照してください。
+
 大気管理者向けの監視ダッシュボードです。[airpollutionwatch API](https://github.com/photochemistry/airpollutionwatch) のデータを使い、神奈川県の光化学オキシダント（OX）を中心に最新値・本日の推移・注意報基準を一覧表示します。
 
 ## 主な機能
