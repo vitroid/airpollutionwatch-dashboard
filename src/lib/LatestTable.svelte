@@ -1,6 +1,6 @@
 <script lang="ts">
   import { OX_THRESHOLDS, OX_LEVEL_LABELS } from './constants';
-  import { levelClass, formatNum } from './utils';
+  import { levelClass, formatNum, formatWindDirection16 } from './utils';
   import type { LatestRow } from './types';
 
   export let latestWithNames: LatestRow[] = [];
@@ -24,8 +24,17 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>測定局</th><th>市区町村</th><th>OX (ppb)</th><th>レベル</th>
-          <th>NOx</th><th>NO2</th><th>PM2.5</th><th>気温</th><th>湿度</th><th>風向</th><th>風速</th>
+          <th>測定局</th>
+          <th>市区町村</th>
+          <th>OX (ppb)</th>
+          <th>レベル</th>
+          <th>NOx (ppb)</th>
+          <th>NO2 (ppb)</th>
+          <th>PM2.5 (µg/m³)</th>
+          <th>気温 (℃)</th>
+          <th>湿度 (%)</th>
+          <th>風向</th>
+          <th>風速 (m/s)</th>
         </tr>
       </thead>
       <tbody>
@@ -38,10 +47,10 @@
             <td class="num">{formatNum(row.nox)}</td>
             <td class="num">{formatNum(row.no2)}</td>
             <td class="num">{formatNum(row.pm25)}</td>
-            <td class="num">{formatNum(row.temp)}</td>
+            <td class="num">{formatNum(row.temp != null ? row.temp / 10 : null)}</td>
             <td class="num">{formatNum(row.hum)}</td>
-            <td class="num">{row.wd != null ? row.wd + '°' : '—'}</td>
-            <td class="num">{formatNum(row.ws)}</td>
+            <td class="num">{formatWindDirection16(row.wd)}</td>
+            <td class="num">{formatNum(row.ws != null ? row.ws * 0.1 : null)}</td>
           </tr>
         {/each}
       </tbody>

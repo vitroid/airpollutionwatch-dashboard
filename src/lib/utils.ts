@@ -21,3 +21,31 @@ export function formatTime(iso: string): string {
     return iso;
   }
 }
+
+/** 風向 16 方位インデックス（1–16）を方位ラベルに変換する。1〜16 以外は「—」。 */
+export function formatWindDirection16(wd: number | null | undefined): string {
+  if (wd == null || Number.isNaN(wd)) return '—';
+  // convert.py の wd_codes_JP の並びに合わせる（index 1〜16 が方位、0/17 は特殊扱い）
+  const labelsJP = [
+    '', // 0: 未使用
+    '北北東', // 1
+    '北東', // 2
+    '東北東', // 3
+    '東', // 4
+    '東南東', // 5
+    '南東', // 6
+    '南南東', // 7
+    '南', // 8
+    '南南西', // 9
+    '南西', // 10
+    '西南西', // 11
+    '西', // 12
+    '西北西', // 13
+    '北西', // 14
+    '北北西', // 15
+    '北', // 16
+  ] as const;
+  const n = Math.round(wd);
+  if (n < 1 || n > 16) return '—';
+  return labelsJP[n];
+}
