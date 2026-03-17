@@ -9,6 +9,10 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [svelte()],
     build: {
+      // 本番ビルドの出力先:
+      // - ローカル: ../airpollutionwatch-api/dashboard/dist
+      // - API リポジトリ側の FastAPI がこのディレクトリをそのまま配信する
+      outDir: '../airpollutionwatch-api/dashboard/dist',
       rollupOptions: {
         output: {
           // Plotly.js を別チャンクに分離（地図・時系列で使用。本体が 2MB 超のため）
