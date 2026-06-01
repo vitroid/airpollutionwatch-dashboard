@@ -42,7 +42,13 @@
     const sorted = [...prefectures].sort((a, b) => a.id.localeCompare(b.id));
     return sorted.map((p) => {
       const existing = byId.get(p.id);
-      if (existing) return existing;
+      if (existing) {
+        return {
+          ...existing,
+          name_ja: existing.name_ja || p.name_ja,
+          region: existing.region || p.region,
+        };
+      }
       const collectMsg = extractLastCollectLogMessage(collectLog, p.id);
       return {
         pref_id: p.id,
@@ -72,9 +78,8 @@
       ]);
       collectLog = res.collect_log ?? null;
       const fromLog = res.status_items ?? [];
-      const merged =
+      statusItems =
         prefs.length > 0 ? mergeStatusItems(fromLog, prefs, collectLog) : fromLog;
-      statusItems = await enrichStatusFromHistory(merged);
       lastFetched = new Date();
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
@@ -188,101 +193,6 @@
       return out;
     }
     return out;
-  }
-
-  function hoursAgoFromIso(iso: string | null): number | null {
-    if (!iso) return null;
-    const normalized = iso.includes('+') || iso.endsWith('Z') ? iso : iso.replace(' ', 'T') + '+09:00';
-    const ms = new Date(normalized).getTime();
-    if (Number.isNaN(ms)) return null;
-    return Math.round(((Date.now() - ms) / (60 * 60 * 1000)) * 10) / 10;
-  }
-
-  function daysAgoFromIso(iso: string | null): number | null {
-    if (!iso) return null;
-    const normalized = iso.includes('+') || iso.endsWith('Z') ? iso : iso.replace(' ', 'T') + '+09:00';
-    const ms = new Date(normalized).getTime();
-    if (Number.isNaN(ms)) return null;
-    return Math.round(((Date.now() - ms) / (24 * 60 * 60 * 1000)) * 10) / 10;
-  }
-
-  /** 履歴表から直近のキャッシュあり時刻（JST 正時 ISO） */
-  function computeLatestFromHistoryRows(historyRows: HistoryRow[]): string | null {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    for (const row of historyRows) {
-      const date = row.date.slice(0, 10);
-      for (let h = 23; h >= 0; h--) {
-        if (row.hours[h] === 'o') return `${date}T${pad(h)}:00:00+09:00`;
-      }
-    }
-    return null;
-  }
-
-  function needsHistoryEnrich(item: LogStatusItem): boolean {
-    return item.latest_datetime == null || item.oldest_continuous_datetime == null;
-  }
-
-  /** /v1/log に載らない・未集計の県を履歴 API の summary / rows で補完 */
-  async function enrichStatusFromHistory(items: LogStatusItem[]): Promise<LogStatusItem[]> {
-    const targets = items.filter(needsHistoryEnrich);
-    if (targets.length === 0) return items;
-
-    const patches = new Map<string, LogStatusItem>();
-    await Promise.all(
-      targets.map(async (item) => {
-        try {
-          const res = await fetchLogPrefectureHistory(item.pref_id);
-          const root = res as Record<string, unknown>;
-          const summary = (root.summary ?? {}) as Record<string, unknown>;
-          const historyRows = normalizeHistoryRows(res);
-          const latest =
-            (typeof summary.latest_datetime === 'string' ? summary.latest_datetime : null) ??
-            computeLatestFromHistoryRows(historyRows);
-          const oldest =
-            (typeof summary.oldest_continuous_datetime === 'string'
-              ? summary.oldest_continuous_datetime
-              : null) ?? null;
-          const okSlots = typeof summary.ok_slots === 'number' ? summary.ok_slots : 0;
-          const totalSlots = typeof summary.total_slots === 'number' ? summary.total_slots : null;
-          const ratio = typeof summary.coverage_ratio === 'number' ? summary.coverage_ratio : null;
-          const hasCache = okSlots > 0 || latest != null;
-
-          if (!latest && !oldest && !hasCache) return;
-
-          const coveragePct = ratio != null ? `${(ratio * 100).toFixed(1)}%` : null;
-          const cacheNote =
-            okSlots > 0 && totalSlots != null
-              ? `キャッシュ ${okSlots}/${totalSlots} スロット${coveragePct ? ` (${coveragePct})` : ''}`
-              : null;
-
-          patches.set(item.pref_id, {
-            ...item,
-            latest_datetime: item.latest_datetime ?? latest,
-            hours_ago: item.hours_ago ?? hoursAgoFromIso(latest),
-            oldest_continuous_datetime: item.oldest_continuous_datetime ?? oldest,
-            continuous_days_ago: item.continuous_days_ago ?? daysAgoFromIso(oldest),
-            has_data: item.has_data || hasCache,
-            log_status:
-              item.log_status === 'error' && hasCache
-                ? 'warning'
-                : hasCache && ratio != null && ratio < 0.02
-                  ? 'warning'
-                  : hasCache && item.log_status === 'error'
-                    ? 'ok'
-                    : item.log_status,
-            log_message: cacheNote
-              ? item.log_message
-                ? `${item.log_message}（${cacheNote}）`
-                : cacheNote
-              : item.log_message,
-          });
-        } catch {
-          /* 履歴取得失敗時は元の行のまま */
-        }
-      })
-    );
-
-    return items.map((it) => patches.get(it.pref_id) ?? it);
   }
 
   function normalizeHistoryRows(payload: unknown): HistoryRow[] {
