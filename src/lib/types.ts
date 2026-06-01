@@ -12,8 +12,14 @@ export interface LatestRow {
   pm25: number | null;
   temp: number | null;
   hum: number | null;
+  /** 旧形式: 風向(16方位) */
   wd: number | null;
+  /** 旧形式: 風速（0.1m/s単位想定） */
   ws: number | null;
+  /** 新形式: 東向き成分（単位は API 側に依存。矢印描画は相対スケール） */
+  wx: number | null;
+  /** 新形式: 北向き成分（単位は API 側に依存。矢印描画は相対スケール） */
+  wy: number | null;
   level: OxLevel;
 }
 

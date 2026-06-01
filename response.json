@@ -1,0 +1,1175 @@
+{
+    "datetime": "2026-03-18T17:00:00+09:00",
+    "stations": [
+      {
+        "station_id": "14101010",
+        "values": {
+          "OX": 30,
+          "NOX": 31,
+          "NO2": 26,
+          "PM25": 5,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 7,
+          "WS": 50
+        }
+      },
+      {
+        "station_id": "14101020",
+        "values": {
+          "OX": 32,
+          "NOX": 25,
+          "NO2": 22,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 8,
+          "WS": 30
+        }
+      },
+      {
+        "station_id": "14101520",
+        "values": {
+          "OX": null,
+          "NOX": 22,
+          "NO2": 18,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14102010",
+        "values": {
+          "OX": 35,
+          "NOX": 22,
+          "NO2": 20,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 6,
+          "WS": 42
+        }
+      },
+      {
+        "station_id": "14103010",
+        "values": {
+          "OX": 49,
+          "NOX": 7,
+          "NO2": 6,
+          "PM25": 3,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 6,
+          "WS": 15
+        }
+      },
+      {
+        "station_id": "14103510",
+        "values": {
+          "OX": null,
+          "NOX": 12,
+          "NO2": 10,
+          "PM25": 2,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14104030",
+        "values": {
+          "OX": 42,
+          "NOX": 15,
+          "NO2": 13,
+          "PM25": 5,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 7,
+          "WS": 31
+        }
+      },
+      {
+        "station_id": "14105020",
+        "values": {
+          "OX": 51,
+          "NOX": 6,
+          "NO2": 5,
+          "PM25": 3,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 8,
+          "WS": 21
+        }
+      },
+      {
+        "station_id": "14106010",
+        "values": {
+          "OX": 50,
+          "NOX": 6,
+          "NO2": 5,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 9,
+          "WS": 25
+        }
+      },
+      {
+        "station_id": "14107010",
+        "values": {
+          "OX": 44,
+          "NOX": 10,
+          "NO2": 9,
+          "PM25": 1,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 9,
+          "WS": 17
+        }
+      },
+      {
+        "station_id": "14107520",
+        "values": {
+          "OX": null,
+          "NOX": 20,
+          "NO2": 15,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14108020",
+        "values": {
+          "OX": 45,
+          "NOX": 6,
+          "NO2": 5,
+          "PM25": 5,
+          "TEMP": 149,
+          "HUM": 70,
+          "WD": 8,
+          "WS": 38
+        }
+      },
+      {
+        "station_id": "14109040",
+        "values": {
+          "OX": 36,
+          "NOX": 21,
+          "NO2": 19,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 6,
+          "WS": 40
+        }
+      },
+      {
+        "station_id": "14110050",
+        "values": {
+          "OX": 51,
+          "NOX": 5,
+          "NO2": 4,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 7,
+          "WS": 48
+        }
+      },
+      {
+        "station_id": "14110510",
+        "values": {
+          "OX": null,
+          "NOX": 7,
+          "NO2": 6,
+          "PM25": 1,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14111020",
+        "values": {
+          "OX": 50,
+          "NOX": 5,
+          "NO2": 4,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 8,
+          "WS": 11
+        }
+      },
+      {
+        "station_id": "14111520",
+        "values": {
+          "OX": null,
+          "NOX": 16,
+          "NO2": 12,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14112020",
+        "values": {
+          "OX": 48,
+          "NOX": 5,
+          "NO2": 4,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 7,
+          "WS": 42
+        }
+      },
+      {
+        "station_id": "14112510",
+        "values": {
+          "OX": null,
+          "NOX": 20,
+          "NO2": 14,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14113020",
+        "values": {
+          "OX": 52,
+          "NOX": 5,
+          "NO2": 4,
+          "PM25": -2,
+          "TEMP": 155,
+          "HUM": 59,
+          "WD": 9,
+          "WS": 43
+        }
+      },
+      {
+        "station_id": "14113510",
+        "values": {
+          "OX": null,
+          "NOX": 7,
+          "NO2": 6,
+          "PM25": 2,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14113520",
+        "values": {
+          "OX": null,
+          "NOX": 9,
+          "NO2": 7,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14114020",
+        "values": {
+          "OX": 46,
+          "NOX": 5,
+          "NO2": 5,
+          "PM25": 8,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 6,
+          "WS": 25
+        }
+      },
+      {
+        "station_id": "14115010",
+        "values": {
+          "OX": 51,
+          "NOX": 5,
+          "NO2": 4,
+          "PM25": 4,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 8,
+          "WS": 38
+        }
+      },
+      {
+        "station_id": "14116010",
+        "values": {
+          "OX": 48,
+          "NOX": 6,
+          "NO2": 5,
+          "PM25": 3,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 8,
+          "WS": 45
+        }
+      },
+      {
+        "station_id": "14117010",
+        "values": {
+          "OX": 50,
+          "NOX": 9,
+          "NO2": 8,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 8,
+          "WS": 48
+        }
+      },
+      {
+        "station_id": "14118010",
+        "values": {
+          "OX": 54,
+          "NOX": 6,
+          "NO2": 5,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 10,
+          "WS": 44
+        }
+      },
+      {
+        "station_id": "14131020",
+        "values": {
+          "OX": 45,
+          "NOX": 14,
+          "NO2": 12,
+          "PM25": 5,
+          "TEMP": 161,
+          "HUM": 66,
+          "WD": 8,
+          "WS": 26
+        }
+      },
+      {
+        "station_id": "14131030",
+        "values": {
+          "OX": 34,
+          "NOX": 20,
+          "NO2": 18,
+          "PM25": 10,
+          "TEMP": 159,
+          "HUM": 70,
+          "WD": 7,
+          "WS": 17
+        }
+      },
+      {
+        "station_id": "14131100",
+        "values": {
+          "OX": null,
+          "NOX": 12,
+          "NO2": 11,
+          "PM25": 5,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14131530",
+        "values": {
+          "OX": null,
+          "NOX": 16,
+          "NO2": 13,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 8,
+          "WS": 11
+        }
+      },
+      {
+        "station_id": "14131540",
+        "values": {
+          "OX": null,
+          "NOX": 15,
+          "NO2": 13,
+          "PM25": 5,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14132060",
+        "values": {
+          "OX": 47,
+          "NOX": 8,
+          "NO2": 8,
+          "PM25": 8,
+          "TEMP": 153,
+          "HUM": 68,
+          "WD": 7,
+          "WS": 51
+        }
+      },
+      {
+        "station_id": "14132510",
+        "values": {
+          "OX": null,
+          "NOX": 20,
+          "NO2": 15,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14133010",
+        "values": {
+          "OX": 48,
+          "NOX": 9,
+          "NO2": 8,
+          "PM25": 6,
+          "TEMP": 154,
+          "HUM": 65,
+          "WD": 7,
+          "WS": 46
+        }
+      },
+      {
+        "station_id": "14133520",
+        "values": {
+          "OX": null,
+          "NOX": 10,
+          "NO2": 10,
+          "PM25": 7,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14134010",
+        "values": {
+          "OX": 43,
+          "NOX": 12,
+          "NO2": 10,
+          "PM25": 3,
+          "TEMP": 160,
+          "HUM": 61,
+          "WD": 8,
+          "WS": 11
+        }
+      },
+      {
+        "station_id": "14134530",
+        "values": {
+          "OX": null,
+          "NOX": 56,
+          "NO2": 23,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14135070",
+        "values": {
+          "OX": 52,
+          "NOX": 3,
+          "NO2": 3,
+          "PM25": 6,
+          "TEMP": 149,
+          "HUM": 63,
+          "WD": 9,
+          "WS": 33
+        }
+      },
+      {
+        "station_id": "14135080",
+        "values": {
+          "OX": 54,
+          "NOX": 4,
+          "NO2": 4,
+          "PM25": 7,
+          "TEMP": 160,
+          "HUM": 59,
+          "WD": 9,
+          "WS": 31
+        }
+      },
+      {
+        "station_id": "14135530",
+        "values": {
+          "OX": null,
+          "NOX": 9,
+          "NO2": 7,
+          "PM25": 8,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14135540",
+        "values": {
+          "OX": null,
+          "NOX": 10,
+          "NO2": 7,
+          "PM25": 9,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14136010",
+        "values": {
+          "OX": 47,
+          "NOX": 9,
+          "NO2": 8,
+          "PM25": 7,
+          "TEMP": 157,
+          "HUM": 62,
+          "WD": 6,
+          "WS": 30
+        }
+      },
+      {
+        "station_id": "14136510",
+        "values": {
+          "OX": null,
+          "NOX": 9,
+          "NO2": 8,
+          "PM25": 7,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14153510",
+        "values": {
+          "OX": null,
+          "NOX": 20,
+          "NO2": 13,
+          "PM25": 0,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14201020",
+        "values": {
+          "OX": 46,
+          "NOX": 6,
+          "NO2": 6,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 8,
+          "WS": 27
+        }
+      },
+      {
+        "station_id": "14201040",
+        "values": {
+          "OX": 47,
+          "NOX": 5,
+          "NO2": 5,
+          "PM25": 5,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 6,
+          "WS": 26
+        }
+      },
+      {
+        "station_id": "14201050",
+        "values": {
+          "OX": 43,
+          "NOX": 9,
+          "NO2": 8,
+          "PM25": 5,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 6,
+          "WS": 33
+        }
+      },
+      {
+        "station_id": "14201080",
+        "values": {
+          "OX": 45,
+          "NOX": 5,
+          "NO2": 5,
+          "PM25": 3,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 7,
+          "WS": 19
+        }
+      },
+      {
+        "station_id": "14201530",
+        "values": {
+          "OX": null,
+          "NOX": 13,
+          "NO2": 11,
+          "PM25": 4,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14203030",
+        "values": {
+          "OX": 48,
+          "NOX": 8,
+          "NO2": 7,
+          "PM25": null,
+          "TEMP": 153,
+          "HUM": 78.7,
+          "WD": 8,
+          "WS": 38
+        }
+      },
+      {
+        "station_id": "14203040",
+        "values": {
+          "OX": 52,
+          "NOX": 3,
+          "NO2": 3,
+          "PM25": 5,
+          "TEMP": 151,
+          "HUM": 83,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14203050",
+        "values": {
+          "OX": 50,
+          "NOX": 4,
+          "NO2": 3,
+          "PM25": null,
+          "TEMP": 150,
+          "HUM": 79.6,
+          "WD": 8,
+          "WS": 34
+        }
+      },
+      {
+        "station_id": "14203100",
+        "values": {
+          "OX": 48,
+          "NOX": 9,
+          "NO2": 6,
+          "PM25": 3,
+          "TEMP": 154,
+          "HUM": 76.6,
+          "WD": 8,
+          "WS": 40
+        }
+      },
+      {
+        "station_id": "14203510",
+        "values": {
+          "OX": null,
+          "NOX": 10,
+          "NO2": 7,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14204010",
+        "values": {
+          "OX": 43,
+          "NOX": 9,
+          "NO2": 8,
+          "PM25": 5,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 8,
+          "WS": 26
+        }
+      },
+      {
+        "station_id": "14204530",
+        "values": {
+          "OX": null,
+          "NOX": 13,
+          "NO2": 8,
+          "PM25": 4,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14205010",
+        "values": {
+          "OX": 49,
+          "NOX": null,
+          "NO2": null,
+          "PM25": 3,
+          "TEMP": 152,
+          "HUM": 73.6,
+          "WD": 7,
+          "WS": 9
+        }
+      },
+      {
+        "station_id": "14205030",
+        "values": {
+          "OX": 50,
+          "NOX": 4,
+          "NO2": 4,
+          "PM25": 4,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14205040",
+        "values": {
+          "OX": 45,
+          "NOX": 8,
+          "NO2": 7,
+          "PM25": 3,
+          "TEMP": 153,
+          "HUM": 76.8,
+          "WD": 8,
+          "WS": 25
+        }
+      },
+      {
+        "station_id": "14205050",
+        "values": {
+          "OX": 49,
+          "NOX": 4,
+          "NO2": 4,
+          "PM25": 6,
+          "TEMP": 151,
+          "HUM": 78.3,
+          "WD": 6,
+          "WS": 26
+        }
+      },
+      {
+        "station_id": "14205510",
+        "values": {
+          "OX": null,
+          "NOX": 10,
+          "NO2": 8,
+          "PM25": 4,
+          "TEMP": 155,
+          "HUM": 69.1,
+          "WD": 7,
+          "WS": 26
+        }
+      },
+      {
+        "station_id": "14206010",
+        "values": {
+          "OX": 56,
+          "NOX": 7,
+          "NO2": 6,
+          "PM25": 10,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 8,
+          "WS": 61
+        }
+      },
+      {
+        "station_id": "14206520",
+        "values": {
+          "OX": null,
+          "NOX": 12,
+          "NO2": 9,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14207010",
+        "values": {
+          "OX": 46,
+          "NOX": 7,
+          "NO2": 5,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 7,
+          "WS": 30
+        }
+      },
+      {
+        "station_id": "14207510",
+        "values": {
+          "OX": null,
+          "NOX": 13,
+          "NO2": 10,
+          "PM25": 4,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14208020",
+        "values": {
+          "OX": 49,
+          "NOX": 2,
+          "NO2": 2,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 7,
+          "WS": 26
+        }
+      },
+      {
+        "station_id": "14208520",
+        "values": {
+          "OX": null,
+          "NOX": 11,
+          "NO2": 6,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14209010",
+        "values": {
+          "OX": 45,
+          "NOX": 6,
+          "NO2": 6,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14209020",
+        "values": {
+          "OX": 51,
+          "NOX": 5,
+          "NO2": 4,
+          "PM25": 6,
+          "TEMP": 147,
+          "HUM": 68,
+          "WD": 8,
+          "WS": 48
+        }
+      },
+      {
+        "station_id": "14209030",
+        "values": {
+          "OX": 51,
+          "NOX": null,
+          "NO2": null,
+          "PM25": null,
+          "TEMP": 147,
+          "HUM": 62.4,
+          "WD": 6,
+          "WS": 25
+        }
+      },
+      {
+        "station_id": "14209040",
+        "values": {
+          "OX": 51,
+          "NOX": null,
+          "NO2": null,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14209050",
+        "values": {
+          "OX": 55,
+          "NOX": 4,
+          "NO2": 4,
+          "PM25": 10,
+          "TEMP": 142,
+          "HUM": 69.3,
+          "WD": 6,
+          "WS": 25
+        }
+      },
+      {
+        "station_id": "14209530",
+        "values": {
+          "OX": null,
+          "NOX": 30,
+          "NO2": 16,
+          "PM25": 7,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14210010",
+        "values": {
+          "OX": 41,
+          "NOX": 12,
+          "NO2": 11,
+          "PM25": 4,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 6,
+          "WS": 26
+        }
+      },
+      {
+        "station_id": "14211010",
+        "values": {
+          "OX": 53,
+          "NOX": 9,
+          "NO2": 7,
+          "PM25": 10,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 9,
+          "WS": 18
+        }
+      },
+      {
+        "station_id": "14211510",
+        "values": {
+          "OX": null,
+          "NOX": 15,
+          "NO2": 8,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14212520",
+        "values": {
+          "OX": null,
+          "NOX": 22,
+          "NO2": 15,
+          "PM25": 5,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14212530",
+        "values": {
+          "OX": null,
+          "NOX": null,
+          "NO2": null,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14213010",
+        "values": {
+          "OX": 44,
+          "NOX": 11,
+          "NO2": 9,
+          "PM25": 7,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 11,
+          "WS": 11
+        }
+      },
+      {
+        "station_id": "14213510",
+        "values": {
+          "OX": null,
+          "NOX": 14,
+          "NO2": 8,
+          "PM25": 5,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14214020",
+        "values": {
+          "OX": 51,
+          "NOX": 6,
+          "NO2": 5,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 10,
+          "WS": 39
+        }
+      },
+      {
+        "station_id": "14214510",
+        "values": {
+          "OX": null,
+          "NOX": 9,
+          "NO2": 7,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14215010",
+        "values": {
+          "OX": 48,
+          "NOX": 6,
+          "NO2": 5,
+          "PM25": 6,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14216020",
+        "values": {
+          "OX": 51,
+          "NOX": 4,
+          "NO2": 4,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 7,
+          "WS": 44
+        }
+      },
+      {
+        "station_id": "14217020",
+        "values": {
+          "OX": 55,
+          "NOX": 6,
+          "NO2": 5,
+          "PM25": 15,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 6,
+          "WS": 23
+        }
+      },
+      {
+        "station_id": "14218010",
+        "values": {
+          "OX": 48,
+          "NOX": 5,
+          "NO2": 5,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14321010",
+        "values": {
+          "OX": 48,
+          "NOX": null,
+          "NO2": null,
+          "PM25": 5,
+          "TEMP": null,
+          "HUM": null,
+          "WD": null,
+          "WS": null
+        }
+      },
+      {
+        "station_id": "14382010",
+        "values": {
+          "OX": 49,
+          "NOX": null,
+          "NO2": null,
+          "PM25": null,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 9,
+          "WS": 16
+        }
+      },
+      {
+        "station_id": "14401010",
+        "values": {
+          "OX": 52,
+          "NOX": null,
+          "NO2": null,
+          "PM25": 7,
+          "TEMP": null,
+          "HUM": null,
+          "WD": 8,
+          "WS": 32
+        }
+      }
+    ]
+  }
