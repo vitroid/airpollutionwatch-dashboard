@@ -2,7 +2,6 @@
   <h2>Appendix（情報源）</h2>
   <ul class="sources">
     <li><strong>大気常時監視情報</strong>：APW API（airpollutionwatch API）</li>
-    <li><strong>気象情報</strong>：Open-Meteo（ECMWF IFS）</li>
   </ul>
 </section>
 

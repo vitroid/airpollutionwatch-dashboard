@@ -13,16 +13,6 @@ export default defineConfig(({ mode }) => {
       // - ローカル: ../airpollutionwatch-api/dashboard/dist
       // - API リポジトリ側の FastAPI がこのディレクトリをそのまま配信する
       outDir: '../airpollutionwatch-api/dashboard/dist',
-      rollupOptions: {
-        output: {
-          // Plotly.js を別チャンクに分離（地図・時系列で使用。本体が 2MB 超のため）
-          manualChunks: (id) => {
-            if (id.includes('plotly.js-dist-min')) return 'plotly'
-            return undefined
-          },
-        },
-      },
-      chunkSizeWarningLimit: 2500, // Plotly チャンクが 500kB 超のため引き上げ（意図的な大型依存）
     },
     server: {
       proxy: {

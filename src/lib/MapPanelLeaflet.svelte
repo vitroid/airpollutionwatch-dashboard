@@ -2,55 +2,24 @@
   import { onMount, onDestroy, tick } from 'svelte';
   import L from 'leaflet';
   import 'leaflet/dist/leaflet.css';
-  import { fetchGridField, type GridFieldResponse } from './api';
-  import {
-    DEFAULT_INTERPOLATION_METHOD,
-    INTERPOLATION_METHOD_OPTIONS,
-    type InterpolationMethod,
-  } from './constants';
   import type { LatestRow, BBox } from './types';
 
-  export let gridFieldData: GridFieldResponse | null = null;
   export let latestWithNames: LatestRow[] = [];
-  export let outlineRings: [number, number][][] = [];
   export let bboxForMap: BBox = { minLon: 128, minLat: 30, maxLon: 146, maxLat: 46 };
   export let datetime: string | null = null;
-  export let loading: boolean = false;
   export let prefName: string = '';
-  export let oxDisplayMultiplier: number = 1;
-  /** /v1/grid/field の補間 method（ヘッダセレクタから受け取る） */
-  export let interpolationMethod: InterpolationMethod = DEFAULT_INTERPOLATION_METHOD;
 
   const REF_PPB = 120;
 
   let panelRoot: HTMLElement;
   let mapContainer: HTMLDivElement;
   let map: L.Map | null = null;
-  let heatOverlay: L.ImageOverlay | null = null;
-  let outlineLayer: L.LayerGroup | null = null;
   let windArrowLayer: L.LayerGroup | null = null;
   let stationLayer: L.LayerGroup | null = null;
   let resizeObserver: ResizeObserver | null = null;
 
-  const SHOW_HEATMAP = true;
-
-  let viewportGridData: GridFieldResponse | null = null;
-  let currentGrid: GridFieldResponse | null = null;
-  let gridLoading = false;
-  let lastGridKey: string | null = null;
   let lastFittedBboxKey: string | null = null;
   let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-  let refreshDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-  let dataRangeMin: number = 0;
-  let dataRangeMax: number = REF_PPB;
-  let validStationWind = 0;
-  let windSegments = 0;
-
-  const DRAW_TEST_ARROW = false;
-  $: currentInterpolationLabel =
-    INTERPOLATION_METHOD_OPTIONS.find((m) => m.value === interpolationMethod)?.labelJa ??
-    'ATPS';
 
   /** GridStack のパネルドラッグにイベントが伝播しないようにするためのアクション */
   function stopGridDrag(node: HTMLElement) {
@@ -65,44 +34,6 @@
         node.removeEventListener('touchstart', handler);
       },
     };
-  }
-
-  function tileXYToLonLat(x: number, y: number, zoom: number): [number, number] {
-    const n = 2 ** zoom;
-    const lon = (x / n) * 360 - 180;
-    const latRad = Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n)));
-    const lat = (180 / Math.PI) * latRad;
-    return [lon, lat];
-  }
-
-  function valueToRgbaRelative(v: number | null, vMin: number, vMax: number): string {
-    if (v == null || Number.isNaN(v)) return 'rgba(0,0,0,0)';
-    const range = vMax - vMin;
-    const t = range > 0 ? Math.max(0, Math.min(1, (v - vMin) / range)) : 0;
-    const a = 0.8;
-    let r: number, g: number, b: number;
-    if (t <= 0.25) {
-      const s = t / 0.25;
-      r = 34 + s * (76 - 34);
-      g = 139 + s * (175 - 139);
-      b = 34 + s * (74 - 34);
-    } else if (t <= 0.5) {
-      const s = (t - 0.25) / 0.25;
-      r = 76 + s * (255 - 76);
-      g = 175 + s * (235 - 175);
-      b = 74 + s * (59 - 74);
-    } else if (t <= 0.75) {
-      const s = (t - 0.5) / 0.25;
-      r = 255;
-      g = 235 + s * (224 - 235);
-      b = 59 + s * (170 - 59);
-    } else {
-      const s = (t - 0.75) / 0.25;
-      r = 255;
-      g = 224 - s * 224;
-      b = 170 - s * 170;
-    }
-    return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${a})`;
   }
 
   function oxToColor(ox: number | null, zMin = 0, zMax = 250): string {
@@ -132,135 +63,11 @@
     return `rgb(${r},${g},${b})`;
   }
 
-  function computeGlobalRange(data: GridFieldResponse | null): [number, number] {
-    let vMin = Infinity;
-    let vMax = -Infinity;
-
-    if (data) {
-      const { values, tile_x_min, tile_x_max, tile_y_min, tile_y_max } = data;
-      const nx = tile_x_max - tile_x_min + 1;
-      const ny = tile_y_max - tile_y_min + 1;
-      const mul = oxDisplayMultiplier;
-
-      const getVal = (row: number, col: number): number | null => {
-        const v = values[row]?.[col];
-        if (v == null || Number.isNaN(v)) return null;
-        return v * mul;
-      };
-
-      for (let row = 0; row < ny; row++) {
-        for (let col = 0; col < nx; col++) {
-          const val = getVal(row, col);
-          if (val != null) {
-            vMin = Math.min(vMin, val);
-            vMax = Math.max(vMax, val);
-          }
-        }
-      }
-    }
-
-    for (const row of latestWithNames) {
-      if (row.ox != null && Number.isFinite(row.ox)) {
-        vMin = Math.min(vMin, row.ox);
-        vMax = Math.max(vMax, row.ox);
-      }
-    }
-
-    if (!Number.isFinite(vMin) || !Number.isFinite(vMax)) {
-      vMin = 0;
-      vMax = REF_PPB;
-    } else if (vMin === vMax) {
-      vMin = Math.max(0, vMin - 5);
-      vMax = vMax + 5;
-    }
-
-    dataRangeMin = vMin;
-    dataRangeMax = vMax;
-    return [vMin, vMax];
-  }
-
-  /** ヒートマップ彩色は絶対スケール（0～REF_PPB ppb）で行う */
   const HEATMAP_OX_ABS_MIN = 0;
   const HEATMAP_OX_ABS_MAX = REF_PPB;
-  /** 1度あたりの距離（km） */
   const KM_PER_DEG_LAT = 111;
-  /** 風向(16方位) → ベクトルに変換する場合の係数 */
   const WD_16_DEG_PER_DIV = 360 / 16;
 
-  function updateHeatOverlay(data: GridFieldResponse) {
-    if (!map) return;
-    if (!SHOW_HEATMAP) {
-      if (heatOverlay) {
-        map.removeLayer(heatOverlay);
-        heatOverlay = null;
-      }
-      return;
-    }
-    const { values, tile_x_min, tile_x_max, tile_y_min, tile_y_max, z } = data;
-    const nx = tile_x_max - tile_x_min + 1;
-    const ny = tile_y_max - tile_y_min + 1;
-    const mul = oxDisplayMultiplier;
-
-    const [vMin, vMax] = computeGlobalRange(data);
-    dataRangeMin = vMin;
-    dataRangeMax = vMax;
-
-    const getVal = (row: number, col: number): number | null => {
-      const v = values[row]?.[col];
-      if (v == null || Number.isNaN(v)) return null;
-      return v * mul;
-    };
-
-    const canvas = document.createElement('canvas');
-    canvas.width = nx;
-    canvas.height = ny;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    // Leaflet の ImageOverlay では画像の「上」が北になるため、
-    // タイル配列（南→北）の行インデックスを上下反転して描画する
-    for (let row = 0; row < ny; row++) {
-      const canvasRow = ny - 1 - row;
-      for (let col = 0; col < nx; col++) {
-        const val = getVal(row, col);
-        ctx.fillStyle = valueToRgbaRelative(val, HEATMAP_OX_ABS_MIN, HEATMAP_OX_ABS_MAX);
-        ctx.fillRect(col, canvasRow, 1, 1);
-      }
-    }
-
-    // 端のタイル境界で bounds を取る（中心+0.5 だと端が欠けて余白が出やすい）
-    const southWest = tileXYToLonLat(tile_x_min, tile_y_max + 1, z);
-    const northEast = tileXYToLonLat(tile_x_max + 1, tile_y_min, z);
-    const bounds = L.latLngBounds(
-      [southWest[1], southWest[0]],
-      [northEast[1], northEast[0]]
-    );
-
-    if (heatOverlay) {
-      map.removeLayer(heatOverlay);
-      heatOverlay = null;
-    }
-    // ヒートマップは不透明でベースタイルの「上」、風矢印/マーカーの「下」に重ねる
-    heatOverlay = L.imageOverlay(canvas.toDataURL('image/png'), bounds, {
-      opacity: 1,
-      pane: 'heatPane',
-    });
-    heatOverlay.addTo(map);
-  }
-
-  function updateOutlineLayer() {
-    // 県境輪郭は白地図タイル上では省略
-    if (!map) return;
-    if (outlineLayer) {
-      outlineLayer.clearLayers();
-    }
-  }
-
-  /**
-   * 測定局の風ベクトルから矢印の線分（各要素は [[lat,lng],[lat,lng]]）を生成。
-   * - zoom と bounds でビューポート内の局のみ対象・鏃サイズをズーム連動に
-   * - 新形式: wx/wy（東/北成分）を優先
-   * - 旧形式: wd/ws（16方位/風速）にも後方互換で対応
-   */
   function stationWindToArrowSegments(
     rows: LatestRow[],
     zoom: number,
@@ -277,7 +84,6 @@
           (r.wd != null && r.ws != null && Number.isFinite(r.wd) && Number.isFinite(r.ws)))
     );
     const segments: [number, number][][] = [];
-    // ズームレベルに連動した鏃サイズ（ピクセル換算で一定に見えるよう調整）
     const degPerPixel = 360 / (256 * Math.pow(2, zoom));
     const HEAD_BACK_DEG = degPerPixel * 10;
     const HEAD_WING_DEG = degPerPixel * 6;
@@ -287,20 +93,17 @@
       let dLon: number;
       let dLat: number;
       if (r.wx != null && r.wy != null && Number.isFinite(r.wx) && Number.isFinite(r.wy)) {
-        // wx/wy は m/s（東/北成分）想定。1時間移動量（km）→ 度へ変換。
-        const dxKm = r.wx * 3.6; // m/s * 3600 / 1000
+        const dxKm = r.wx * 3.6;
         const dyKm = r.wy * 3.6;
         const cosLat = Math.max(0.2, Math.cos((lat * Math.PI) / 180));
         dLat = dyKm / KM_PER_DEG_LAT;
         dLon = dxKm / (KM_PER_DEG_LAT * cosLat);
       } else {
-        // 旧: wd は「吹いてくる方向」なので 180°反転して「吹いていく方向」にする
         const wdDeg = (r.wd! % 16) * WD_16_DEG_PER_DIV;
         const blowDeg = (wdDeg + 180) % 360;
         const rad = (blowDeg * Math.PI) / 180;
-        // station 側の WS は 0.1 m/s 単位（API互換）として扱う
         const speedMs = r.ws! * 0.1;
-        const distKm = speedMs * 3.6; // 1時間移動量
+        const distKm = speedMs * 3.6;
         const dxKm = distKm * Math.sin(rad);
         const dyKm = distKm * Math.cos(rad);
         const cosLat = Math.max(0.2, Math.cos((lat * Math.PI) / 180));
@@ -311,7 +114,6 @@
       const tipLat = lat + dLat;
       segments.push([[lat, lon], [tipLat, tipLon]]);
 
-      // 鏃（左右の羽）
       const len = Math.hypot(dLon, dLat);
       if (Number.isFinite(len) && len > 1e-6) {
         const ux = dLon / len;
@@ -324,14 +126,8 @@
         const py = ux * wing;
         const left: [number, number] = [tipLat - by + py, tipLon - bx + px];
         const right: [number, number] = [tipLat - by - py, tipLon - bx - px];
-        segments.push([
-          [tipLat, tipLon],
-          left,
-        ]);
-        segments.push([
-          [tipLat, tipLon],
-          right,
-        ]);
+        segments.push([[tipLat, tipLon], left]);
+        segments.push([[tipLat, tipLon], right]);
       }
     }
     return segments;
@@ -344,29 +140,12 @@
     } else {
       windArrowLayer = L.layerGroup().addTo(map);
     }
-    validStationWind = latestWithNames.filter(
-      (r) =>
-        r.lat != null &&
-        r.lon != null &&
-        Number.isFinite(r.lat) &&
-        Number.isFinite(r.lon) &&
-        ((r.wx != null && r.wy != null && Number.isFinite(r.wx) && Number.isFinite(r.wy)) ||
-          (r.wd != null && r.ws != null && Number.isFinite(r.wd) && Number.isFinite(r.ws)))
-    ).length;
     const zoom = map.getZoom();
     const bounds = map.getBounds();
     const segs = stationWindToArrowSegments(latestWithNames, zoom, bounds);
-    windSegments = segs.length;
     for (const seg of segs) {
       if (seg.length < 2) continue;
       L.polyline(seg, { color: '#fff', weight: 3, opacity: 0.95, pane: 'windPane' }).addTo(
-        windArrowLayer!
-      );
-    }
-    if (DRAW_TEST_ARROW) {
-      const c = map.getCenter();
-      const tip = L.latLng(c.lat + 0.08, c.lng + 0.12);
-      L.polyline([c, tip], { color: '#000', weight: 5, opacity: 0.95, pane: 'windPane' }).addTo(
         windArrowLayer!
       );
     }
@@ -403,7 +182,6 @@
       marker.bindPopup(popup);
       marker.addTo(stationLayer);
     }
-    // 最後に追加したマーカー群が最前面になるよう、stationLayer は heatOverlay より後に addTo している
   }
 
   function fitToBbox() {
@@ -415,23 +193,13 @@
     map.fitBounds(bounds, { padding: [16, 16] });
   }
 
-  $: currentGrid = viewportGridData ?? gridFieldData ?? null;
-
-  $: if (map && currentGrid) {
-    void oxDisplayMultiplier;
-    updateHeatOverlay(currentGrid);
-  }
-
   $: if (map) {
-    void outlineRings.length;
     void latestWithNames.length;
-    updateOutlineLayer();
     updateWindArrowLayer();
     updateStationLayer();
   }
 
   $: if (map && bboxForMap) {
-    // bboxForMap が同値でも新しいオブジェクトになる場合があるため、無限 fit を防ぐ
     const k = `${bboxForMap.minLon.toFixed(4)},${bboxForMap.minLat.toFixed(4)},${bboxForMap.maxLon.toFixed(4)},${bboxForMap.maxLat.toFixed(4)}`;
     if (k !== lastFittedBboxKey) {
       lastFittedBboxKey = k;
@@ -439,63 +207,11 @@
     }
   }
 
-  // datetime / 補間method が更新されたら、viewarea でグリッドを取り直す
-  $: if (map && datetime) {
-    void datetime;
-    void interpolationMethod;
-    if (refreshDebounceTimer) clearTimeout(refreshDebounceTimer);
-    refreshDebounceTimer = setTimeout(() => {
-      if (!map) return;
-      void loadGridForViewport();
-    }, 0);
-  }
-
-  async function loadGridForViewport() {
-    if (!map || !datetime) return;
-    // ヒートマップに余白が出ないよう、少し広めに取得する
-    const bounds = map.getBounds().pad(0.15);
-    const bboxStr = [
-      bounds.getWest(),
-      bounds.getSouth(),
-      bounds.getEast(),
-      bounds.getNorth(),
-    ]
-      .map((v) => v.toFixed(4))
-      .join(',');
-    const key = `${bboxStr}|${datetime}|${interpolationMethod}`;
-    lastGridKey = key;
-    gridLoading = true;
-    try {
-      // viewarea に合わせて取得ズームを決める（Leaflet の現在ズームに追従）
-      const z = Math.max(5, Math.min(15, Math.round(map.getZoom())));
-      const res = await fetchGridField(
-        bboxStr,
-        'ox',
-        datetime,
-        z,
-        interpolationMethod,
-        '0.007'
-      );
-      if (lastGridKey !== key) return;
-      viewportGridData = res;
-    } catch (e) {
-      console.warn('[MapPanelLeaflet] fetchGridField 失敗', e);
-    } finally {
-      if (lastGridKey === key) {
-        gridLoading = false;
-      }
-    }
-  }
-
   onMount(() => {
     map = L.map(mapContainer, {
       preferCanvas: true,
     });
-    // 表示の重なり順を固定（ヒートマップ < 風矢印 < 測定局マーカー）
-    map.createPane('heatPane');
-    map.getPane('heatPane')!.style.zIndex = '250';
     map.createPane('windPane');
-    // 風ベクトルは最前面（マーカーより上）
     map.getPane('windPane')!.style.zIndex = '650';
     map.createPane('stationPane');
     map.getPane('stationPane')!.style.zIndex = '600';
@@ -506,35 +222,21 @@
     }).addTo(map);
 
     fitToBbox();
-
-    updateOutlineLayer();
     updateWindArrowLayer();
     updateStationLayer();
 
-    void loadGridForViewport();
-
-    map.on('moveend', () => {
-      void loadGridForViewport();
-      updateWindArrowLayer();
-    });
-
-    map.on('zoomend', () => {
-      void loadGridForViewport();
-      updateWindArrowLayer();
-    });
+    map.on('moveend', updateWindArrowLayer);
+    map.on('zoomend', updateWindArrowLayer);
 
     tick().then(() => {
       const observeTarget = mapContainer?.parentElement ?? panelRoot;
       if (!observeTarget || !map) return;
       resizeObserver = new ResizeObserver(() => {
         if (map) {
-          // resize による自動パンで moveend が発火しないようにする
           map.invalidateSize({ pan: false });
-          // ただし表示内容は viewarea に依存するため、軽くデバウンスして再取得/再描画する
           if (resizeDebounceTimer) clearTimeout(resizeDebounceTimer);
           resizeDebounceTimer = setTimeout(() => {
             if (!map) return;
-            void loadGridForViewport();
             updateWindArrowLayer();
           }, 150);
         }
@@ -546,32 +248,20 @@
   onDestroy(() => {
     resizeObserver?.disconnect();
     if (resizeDebounceTimer) clearTimeout(resizeDebounceTimer);
-    if (refreshDebounceTimer) clearTimeout(refreshDebounceTimer);
     if (map) {
       map.remove();
     }
     map = null;
-    heatOverlay = null;
-    outlineLayer = null;
     windArrowLayer = null;
     stationLayer = null;
   });
 </script>
 
 <section class="section map-section" bind:this={panelRoot}>
-  <h2>{prefName} OX 分布（補間・ヒートマップ）</h2>
+  <h2>{prefName} OX 分布（測定局）</h2>
   {#if datetime}
-    <p class="map-datetime">
-      対象時刻: {datetime}
-      <span class="interp-label">／ 補間: {currentInterpolationLabel}</span>
-    </p>
+    <p class="map-datetime">対象時刻: {datetime}</p>
   {/if}
-  {#if !gridFieldData && !loading}
-    <p class="muted">
-      グリッドデータを取得できませんでした（API /v1/grid/field を確認してください）。
-    </p>
-  {/if}
-  <!-- 地図ドラッグ時に GridStack のパネルドラッグが始まらないよう、地図領域では伝播を止める -->
   <div
     class="map-wrap"
     role="application"
@@ -582,9 +272,6 @@
   </div>
   <p class="map-legend">
     階調: 低（緑）→ 高（赤）。〇は測定局。風速・風向を測定している局では白い矢印（向き=風向、長さ=1時間の移動量）を表示。
-    {#if gridFieldData && dataRangeMin !== dataRangeMax}
-      — 表示範囲: <strong>{dataRangeMin.toFixed(0)} ～ {dataRangeMax.toFixed(0)} ppb</strong>
-    {/if}
   </p>
 </section>
 
@@ -630,9 +317,4 @@
   .map-wrap :global(.leaflet-container) {
     font-family: inherit;
   }
-  .muted {
-    font-size: 0.85rem;
-    color: #888;
-  }
 </style>
-

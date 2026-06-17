@@ -39,7 +39,7 @@ export type PollutantKey = 'OX' | 'NOX' | 'NO2' | 'PM25' | 'TEMP' | 'HUM' | 'WS'
 export interface PollutantMeta {
   /** 内部キー（LatestRow のフィールド名と対応） */
   key: PollutantKey;
-  /** API パラメータ（/v1/grid/field の item 引数など） */
+  /** API パラメータ（/v1/latest の items 引数など） */
   apiParam: string;
   /** セレクター表示用ラベル */
   labelJa: string;
@@ -106,37 +106,3 @@ export const DEFAULT_POLLUTANT_KEY: PollutantKey = 'OX';
 export function getPollutantMeta(key: PollutantKey): PollutantMeta {
   return POLLUTANT_OPTIONS.find((p) => p.key === key) ?? POLLUTANT_OPTIONS[0];
 }
-
-/** /v1/grid/field の補間 method パラメータ */
-export type InterpolationMethod = 'atps' | 'idw' | 'linear' | 'nnatural';
-
-export interface InterpolationMethodMeta {
-  value: InterpolationMethod;
-  labelJa: string;
-  descriptionJa: string;
-}
-
-export const INTERPOLATION_METHOD_OPTIONS: InterpolationMethodMeta[] = [
-  {
-    value: 'atps',
-    labelJa: 'ATPS（薄板スプライン）',
-    descriptionJa: '既定の補間。局データから滑らかな面を推定します。',
-  },
-  {
-    value: 'idw',
-    labelJa: 'IDW（距離逆数補間）',
-    descriptionJa: '近い局を強く、遠い局を弱く重み付けして補間します。',
-  },
-  {
-    value: 'linear',
-    labelJa: '線形補間',
-    descriptionJa: '格子点間を線形につないで補間します。',
-  },
-  {
-    value: 'nnatural',
-    labelJa: 'Natural Neighbour 補間',
-    descriptionJa: 'ボロノイ分割に基づく natural neighbour 補間です。',
-  },
-] as const;
-
-export const DEFAULT_INTERPOLATION_METHOD: InterpolationMethod = 'atps';

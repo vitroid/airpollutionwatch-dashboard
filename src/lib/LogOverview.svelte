@@ -9,7 +9,7 @@
   let lastFetched: Date | null = null;
   let statusItems: LogStatusItem[] = [];
   let collectLog: string | null = null;
-  type HourMark = 'o' | 'x' | '-';
+  type HourMark = 'o' | 'e' | 'x' | '-';
   type HistoryRow = { date: string; hours: HourMark[] };
   let historyDialogOpen = false;
   let historyLoading = false;
@@ -153,13 +153,41 @@
   }
 
   function parseHourMark(v: unknown): HourMark {
+    if (
+      v === 'empty' ||
+      v === 'EMPTY' ||
+      v === 'e' ||
+      v === 'E' ||
+      v === 'partial' ||
+      v === 'pending'
+    ) {
+      return 'e';
+    }
     if (v === true || v === 1 || v === '1' || v === 'o' || v === 'O' || v === 'ok' || v === 'OK' || v === 'true' || v === 'TRUE') {
       return 'o';
     }
-    if (v === false || v === 0 || v === '0' || v === 'x' || v === 'X' || v === 'ng' || v === 'NG' || v === 'false' || v === 'FALSE') {
+    if (
+      v === false ||
+      v === 0 ||
+      v === '0' ||
+      v === 'x' ||
+      v === 'X' ||
+      v === 'missing' ||
+      v === 'ng' ||
+      v === 'NG' ||
+      v === 'false' ||
+      v === 'FALSE'
+    ) {
       return 'x';
     }
     return '-';
+  }
+
+  function formatHourMark(mark: HourMark): string {
+    if (mark === 'o') return '〇';
+    if (mark === 'e') return '△';
+    if (mark === 'x') return '×';
+    return '—';
   }
 
   function normalize24Hours(source: unknown): HourMark[] {
@@ -168,12 +196,12 @@
       for (const cell of source as Array<Record<string, unknown>>) {
         const hourRaw = cell.hour;
         if (typeof hourRaw !== 'number' || hourRaw < 0 || hourRaw > 23) continue;
-        const markByHasData = parseHourMark(cell.has_data);
-        if (markByHasData !== '-') {
-          out[hourRaw] = markByHasData;
+        const markByStatus = parseHourMark(cell.status);
+        if (markByStatus !== '-') {
+          out[hourRaw] = markByStatus;
           continue;
         }
-        out[hourRaw] = parseHourMark(cell.status);
+        out[hourRaw] = parseHourMark(cell.has_data);
       }
       return out;
     }
@@ -235,7 +263,7 @@
     historyLoading = true;
     historyError = null;
     historyRows = [];
-    historyTitle = `${item.name_ja} キャッシュ履歴`;
+    historyTitle = `${item.name_ja} 収集履歴`;
     try {
       const res = await fetchLogPrefectureHistory(item.pref_id);
       historyRows = normalizeHistoryRows(res);
@@ -368,7 +396,7 @@
           <p class="history-error">取得できませんでした: {historyError}</p>
         {:else}
           <div class="history-table-wrap">
-            <table class="history-table" aria-label="24時間キャッシュ履歴">
+            <table class="history-table" aria-label="24時間収集履歴">
               <thead>
                 <tr>
                   <th>日付</th>
@@ -382,8 +410,18 @@
                   <tr>
                     <td>{row.date}</td>
                     {#each row.hours as mark}
-                      <td class:mark-ng={mark === 'x'}>
-                        {mark === 'o' ? '〇' : mark === 'x' ? '×' : '—'}
+                      <td
+                        class:mark-ng={mark === 'x'}
+                        class:mark-empty={mark === 'e'}
+                        title={mark === 'e'
+                          ? '行のみ（全項目欠測・再取得待ち）'
+                          : mark === 'x'
+                            ? 'データなし'
+                            : mark === 'o'
+                              ? '測定値あり'
+                              : ''}
+                      >
+                        {formatHourMark(mark)}
                       </td>
                     {/each}
                   </tr>
@@ -391,7 +429,9 @@
               </tbody>
             </table>
           </div>
-          <p class="history-meta">横24時間 / 縦は記録日数、〇: キャッシュあり、×: なし</p>
+          <p class="history-meta">
+            横24時間 / 縦は記録日数 — 〇: 測定値あり、△: 行のみ（全項目欠測・再取得待ち）、×: 行なし
+          </p>
         {/if}
       </div>
     </div>
@@ -649,6 +689,11 @@
   .mark-ng {
     color: #f14c4c;
     font-weight: 700;
+  }
+
+  .mark-empty {
+    color: #e0a040;
+    font-weight: 600;
   }
 
   .history-meta {

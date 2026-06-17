@@ -102,7 +102,7 @@ export interface LogOverviewResponse {
   collect_log: string | null;
 }
 
-/** 県別キャッシュ履歴（レスポンス形式はサーバ実装差分に備えて緩めに扱う） */
+/** 県別収集履歴（〇/△/×。レスポンス形式はサーバ実装差分に備えて緩めに扱う） */
 export type PrefectureLogHistoryResponse = Record<string, unknown>;
 
 async function get<T>(path: string, params?: Record<string, string>): Promise<T> {
@@ -173,76 +173,10 @@ export async function fetchLogOverview(): Promise<LogOverviewResponse> {
   return get<LogOverviewResponse>('/v1/log');
 }
 
-/** 県別キャッシュ履歴（/v1/log/prefectures/{pref_id}/history） */
+/** 県別収集履歴（/v1/log/prefectures/{pref_id}/history） */
 export async function fetchLogPrefectureHistory(
   prefId: string
 ): Promise<PrefectureLogHistoryResponse> {
   return get<PrefectureLogHistoryResponse>(`/v1/log/prefectures/${encodeURIComponent(prefId)}/history`);
 }
-
-/** グリッド field（bbox 内の補間値・地図オーバーレイ用） */
-export interface GridFieldResponse {
-  z: number;
-  datetime: string;
-  method: string;
-  /** API側のキー変更に備えて両対応（旧: pollutant / 新: item） */
-  pollutant?: string;
-  item?: string;
-  tile_x_min: number;
-  tile_x_max: number;
-  tile_y_min: number;
-  tile_y_max: number;
-  values: (number | null)[][];
-}
-
-export async function fetchGridField(
-  bbox: string,
-  item: string,
-  datetimeIso: string,
-  z: number = 12,
-  method: string = 'atps',
-  smoothing: string = '0.007'
-): Promise<GridFieldResponse> {
-  return get<GridFieldResponse>('/v1/grid/field', {
-    bbox,
-    item,
-    datetime: datetimeIso,
-    z: String(z),
-    method,
-    smoothing,
-  });
-}
-
-/** アメダス（JMA）グリッド field（bbox 内の補間値・地図オーバーレイ用） */
-export interface AmedasFieldResponse {
-  datetime: string;
-  method: string;
-  variables: string[];
-  z: number;
-  tile_x_min: number;
-  tile_x_max: number;
-  tile_y_min: number;
-  tile_y_max: number;
-  /** fields[variable][row][col] */
-  fields: Record<string, (number | null)[][]>;
-}
-
-export async function fetchAmedasField(
-  bbox: string,
-  datetimeIso: string,
-  variables: string = 'temp,ws,wd',
-  z: number = 13,
-  method: string = 'idw',
-  smoothing: string = '0.001'
-): Promise<AmedasFieldResponse> {
-  return get<AmedasFieldResponse>('/v1/amedas', {
-    bbox,
-    datetime: datetimeIso,
-    z: String(z),
-    variables,
-    method,
-    smoothing,
-  });
-}
-
 export { BASE as apiBaseUrl };

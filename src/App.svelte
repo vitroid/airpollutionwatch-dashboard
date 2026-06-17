@@ -7,27 +7,17 @@
     fetchLatest,
     fetchStations,
     fetchMeasurementsSeries,
-    fetchGridField,
-    fetchAmedasField,
     fetchPrefectureOutline,
     type LatestResponse,
     type LatestStationValues,
     type PrefectureInfo,
     type StationItem,
     type TimeSeriesResponse,
-    type GridFieldResponse,
-    type AmedasFieldResponse,
   } from './lib/api';
-  import {
-    getOxLevel,
-    DEFAULT_INTERPOLATION_METHOD,
-    INTERPOLATION_METHOD_OPTIONS,
-    type InterpolationMethod,
-  } from './lib/constants';
+  import { getOxLevel } from './lib/constants';
   import { normalizeStationId } from './lib/utils';
   import type { LatestRow, OxSeriesItem, BBox } from './lib/types';
   import MapPanelLeaflet from './lib/MapPanelLeaflet.svelte';
-  import MapPanelAmedasLeaflet from './lib/MapPanelAmedasLeaflet.svelte';
   import TimeSeriesPanel from './lib/TimeSeriesPanel.svelte';
   import LatestTable from './lib/LatestTable.svelte';
   import AppendixPanel from './lib/AppendixPanel.svelte';
@@ -47,12 +37,8 @@
   type ViewMode = 'dashboard' | 'log';
   let view: ViewMode = 'dashboard';
 
-  /** /v1/grid/field の補間 method（地図パネル・Leaflet/Plotly 共通） */
-  let interpolationMethod: InterpolationMethod = DEFAULT_INTERPOLATION_METHOD;
-
   const DEFAULT_LAYOUT = [
-    { id: 'panel-map', x: 0, y: 0, w: 6, h: 6 },
-    { id: 'panel-amedas', x: 6, y: 0, w: 6, h: 6 },
+    { id: 'panel-map', x: 0, y: 0, w: 12, h: 6 },
     { id: 'panel-timeseries', x: 0, y: 6, w: 6, h: 6 },
     { id: 'panel-table', x: 6, y: 6, w: 6, h: 6 },
     { id: 'panel-appendix', x: 0, y: 12, w: 12, h: 2 },
@@ -86,15 +72,10 @@
   let latest: LatestResponse | null = null;
   let stations: StationItem[] = [];
   let timeseries: TimeSeriesResponse | null = null;
-  let gridFieldData: GridFieldResponse | null = null;
-  let amedasFieldData: AmedasFieldResponse | null = null;
   let loading = true;
   let error: string | null = null;
   let lastFetched: Date | null = null;
-  let outlineRings: [number, number][][] = [];
   let outlineBbox: { minLon: number; minLat: number; maxLon: number; maxLat: number } | null = null;
-  /** MapPanel にデータ更新を通知するカウンター */
-  let dataVersion = 0;
 
   const DEFAULT_BBOX: BBox = { minLon: 128, minLat: 30, maxLon: 146, maxLat: 46 };
 
@@ -187,11 +168,9 @@
     loading = true;
     error = null;
     try {
-      outlineRings = [];
       outlineBbox = null;
       const outlineRes = await fetchPrefectureOutline(PREF).catch(() => null);
       if (outlineRes) {
-        outlineRings = outlineRes.rings;
         if (outlineRes.bbox && outlineRes.bbox.length >= 4) {
           outlineBbox = {
             minLon: outlineRes.bbox[0],
@@ -210,57 +189,11 @@
       stations = stationsRes;
       timeseries = tsRes;
       lastFetched = new Date();
-      const loadBbox =
-        outlineBbox
-          ? `${outlineBbox.minLon},${outlineBbox.minLat},${outlineBbox.maxLon},${outlineBbox.maxLat}`
-          : (() => {
-              const withCoords = stationsRes.filter((s) => s.lat != null && s.lon != null && Number.isFinite(s.lat!) && Number.isFinite(s.lon!));
-              if (withCoords.length === 0) return `${DEFAULT_BBOX.minLon},${DEFAULT_BBOX.minLat},${DEFAULT_BBOX.maxLon},${DEFAULT_BBOX.maxLat}`;
-              const pad = 0.05;
-              const lons = withCoords.map((s) => s.lon!);
-              const lats = withCoords.map((s) => s.lat!);
-              return `${Math.min(...lons) - pad},${Math.min(...lats) - pad},${Math.max(...lons) + pad},${Math.max(...lats) + pad}`;
-            })();
-      if (latestRes.datetime) {
-        try {
-          gridFieldData = await fetchGridField(
-            loadBbox,
-            'ox',
-            latestRes.datetime,
-            13,
-            interpolationMethod,
-            '0.007'
-          );
-          const v = gridFieldData?.values;
-          console.log('[load] gridField 取得成功 values.length=', v?.length ?? 0, 'values[0]?.length=', Array.isArray(v?.[0]) ? (v[0] as unknown[]).length : '-');
-        } catch (e) {
-          gridFieldData = null;
-          console.warn('[load] gridField 取得失敗', e);
-        }
-        try {
-          amedasFieldData = await fetchAmedasField(
-            loadBbox,
-            latestRes.datetime,
-            'temp,wx,wy',
-            13,
-            interpolationMethod,
-            '0.001'
-          );
-        } catch (e) {
-          amedasFieldData = null;
-          console.warn('[load] amedasField 取得失敗', e);
-        }
-      } else {
-        gridFieldData = null;
-        amedasFieldData = null;
-        console.log('[load] latestRes.datetime がないため gridField は取得しません');
-      }
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
     } finally {
       loading = false;
       await tick();
-      dataVersion++;
     }
   }
 
@@ -293,74 +226,27 @@
     load();
   }
 
-  function handleInterpolationChange(method: string) {
-    if (method === interpolationMethod) return;
-    interpolationMethod = method as InterpolationMethod;
-    // 補間 method 変更後に「更新」ボタンを押さなくても反映されるよう、グリッドのみ再取得する
-    if (latest?.datetime) {
-      const loadBbox =
-        outlineBbox
-          ? `${outlineBbox.minLon},${outlineBbox.minLat},${outlineBbox.maxLon},${outlineBbox.maxLat}`
-          : (() => {
-              const withCoords = stations.filter(
-                (s) =>
-                  s.lat != null &&
-                  s.lon != null &&
-                  Number.isFinite(s.lat!) &&
-                  Number.isFinite(s.lon!)
-              );
-              if (withCoords.length === 0)
-                return `${DEFAULT_BBOX.minLon},${DEFAULT_BBOX.minLat},${DEFAULT_BBOX.maxLon},${DEFAULT_BBOX.maxLat}`;
-              const pad = 0.05;
-              const lons = withCoords.map((s) => s.lon!);
-              const lats = withCoords.map((s) => s.lat!);
-              return `${Math.min(...lons) - pad},${Math.min(...lats) - pad},${Math.max(
-                ...lons
-              ) + pad},${Math.max(...lats) + pad}`;
-            })();
-      Promise.allSettled([
-        fetchGridField(loadBbox, 'ox', latest.datetime, 13, interpolationMethod, '0.007'),
-        fetchAmedasField(loadBbox, latest.datetime, 'temp,wx,wy', 13, interpolationMethod, '0.001'),
-      ])
-        .then((results) => {
-          const [gridRes, amedasRes] = results;
-          if (gridRes.status === 'fulfilled') gridFieldData = gridRes.value;
-          else {
-            console.warn('[App] gridField 再取得失敗', gridRes.reason);
-            gridFieldData = null;
-          }
-          if (amedasRes.status === 'fulfilled') amedasFieldData = amedasRes.value;
-          else {
-            console.warn('[App] amedasField 再取得失敗', amedasRes.reason);
-            amedasFieldData = null;
-          }
-        })
-        .finally(async () => {
-          await tick();
-          dataVersion++;
-        });
-    }
-  }
-
   function getSavedLayout(): LayoutItem[] | null {
     try {
       const raw = localStorage.getItem(GRID_LAYOUT_KEY) ?? sessionStorage.getItem(GRID_LAYOUT_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed) || parsed.length === 0) return null;
-      const normalized = parsed.map((item: LayoutItem & { width?: number; height?: number }) => {
+      const normalized: LayoutItem[] = [];
+      for (const item of parsed as (LayoutItem & { width?: number; height?: number })[]) {
         const w = Number(item.w ?? item.width ?? 6);
         const h = Number(item.h ?? item.height ?? 3);
         let id = item.id;
         if (id === 'panel-weather') id = 'panel-appendix';
-        return {
+        if (id === 'panel-amedas') continue;
+        normalized.push({
           id,
           x: Number(item.x ?? 0),
           y: Number(item.y ?? 0),
           w: Math.max(MIN_ITEM_W, w),
           h: Math.max(MIN_ITEM_H, h),
-        };
-      });
+        });
+      }
       const looksValid = normalized.some((n) => (n.w ?? 0) >= 5 && (n.h ?? 0) >= 4);
       return looksValid ? normalized : null;
     } catch {
@@ -385,7 +271,7 @@
         // 地図/グラフ内のドラッグはパネル移動にしない（パン/ズーム操作を優先）
         draggable: {
           cancel:
-            '.map-wrap, .leaflet-container, .plotly-map-wrap, .plotly-map, canvas, svg, input, select, textarea, button, a',
+            '.map-wrap, .leaflet-container, canvas, svg, input, select, textarea, button, a',
         },
       },
       gridContainer
@@ -482,20 +368,6 @@
             {/if}
           </select>
         </label>
-        <label class="pref-selector">
-          <span class="pref-selector-label">補間アルゴリズム</span>
-          <select
-            value={interpolationMethod}
-            on:change={(e) => handleInterpolationChange(e.currentTarget.value)}
-            class="pref-select"
-          >
-            {#each INTERPOLATION_METHOD_OPTIONS as m}
-              <option value={m.value} selected={m.value === interpolationMethod}>
-                {m.labelJa}
-              </option>
-            {/each}
-          </select>
-        </label>
         <button type="button" on:click={load} disabled={loading}>{loading ? '取得中…' : '更新'}</button>
         {#if lastFetched}
           <span class="updated">最終更新: {lastFetched.toLocaleString('ja-JP')}</span>
@@ -522,44 +394,17 @@
         gs-id="panel-map"
         gs-x="0"
         gs-y="0"
-        gs-w="6"
+        gs-w="12"
         gs-h="6"
         gs-min-w="3"
         gs-min-h="3"
       >
         <div class="grid-stack-item-content">
           <MapPanelLeaflet
-            {gridFieldData}
             {latestWithNames}
-            {outlineRings}
             {bboxForMap}
             datetime={latest?.datetime ?? null}
-            {loading}
             {prefName}
-            oxDisplayMultiplier={OX_DISPLAY_MULTIPLIER}
-            interpolationMethod={interpolationMethod}
-          />
-        </div>
-      </div>
-      <div
-        class="grid-stack-item"
-        id="panel-amedas"
-        gs-id="panel-amedas"
-        gs-x="6"
-        gs-y="0"
-        gs-w="6"
-        gs-h="6"
-        gs-min-w="3"
-        gs-min-h="3"
-      >
-        <div class="grid-stack-item-content">
-          <MapPanelAmedasLeaflet
-            {amedasFieldData}
-            {bboxForMap}
-            datetime={latest?.datetime ?? null}
-            {loading}
-            {prefName}
-            interpolationMethod={interpolationMethod}
           />
         </div>
       </div>
