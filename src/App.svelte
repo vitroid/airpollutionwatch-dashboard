@@ -239,6 +239,7 @@
         let id = item.id;
         if (id === 'panel-weather') id = 'panel-appendix';
         if (id === 'panel-amedas') continue;
+        if (id === 'panel-convergence') continue;
         normalized.push({
           id,
           x: Number(item.x ?? 0),
@@ -256,8 +257,21 @@
 
   function getInitialLayout(): LayoutItem[] {
     const saved = getSavedLayout();
-    if (saved?.length) return saved;
-    return DEFAULT_LAYOUT;
+    if (!saved?.length) return DEFAULT_LAYOUT;
+    // 旧レイアウトに無いパネルを DEFAULT から補完
+    const have = new Set(saved.map((s) => s.id).filter(Boolean));
+    const merged = [...saved];
+    let maxY = 0;
+    for (const s of saved) {
+      maxY = Math.max(maxY, (s.y ?? 0) + (s.h ?? 0));
+    }
+    for (const d of DEFAULT_LAYOUT) {
+      if (d.id && !have.has(d.id)) {
+        merged.push({ ...d, y: maxY });
+        maxY += d.h ?? 6;
+      }
+    }
+    return merged;
   }
 
   function initGrid() {
@@ -472,9 +486,11 @@
 
 <style>
   .dashboard {
-    max-width: 1400px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
     padding: 1.5rem;
+    box-sizing: border-box;
     font-family: 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
     color: #1a1a1a;
     background: #f5f6f8;

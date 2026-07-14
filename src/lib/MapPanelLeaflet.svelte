@@ -3,6 +3,12 @@
   import L from 'leaflet';
   import 'leaflet/dist/leaflet.css';
   import type { LatestRow, BBox } from './types';
+  import {
+    extractWindSamples,
+    buildConvergenceOverlay,
+    type ConvergenceLine,
+    type ConvergencePolygon,
+  } from './windField';
 
   export let latestWithNames: LatestRow[] = [];
   export let bboxForMap: BBox = { minLon: 128, minLat: 30, maxLon: 146, maxLat: 46 };
@@ -16,12 +22,15 @@
   let map: L.Map | null = null;
   let windArrowLayer: L.LayerGroup | null = null;
   let stationLayer: L.LayerGroup | null = null;
+  let convergenceLayer: L.LayerGroup | null = null;
   let resizeObserver: ResizeObserver | null = null;
 
   let lastFittedBboxKey: string | null = null;
   let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let convergenceCacheKey = '';
+  let cachedLines: ConvergenceLine[] = [];
+  let cachedPolygons: ConvergencePolygon[] = [];
 
-  /** GridStack のパネルドラッグにイベントが伝播しないようにするためのアクション */
   function stopGridDrag(node: HTMLElement) {
     const handler = (e: PointerEvent | TouchEvent | MouseEvent) => {
       e.stopPropagation();
@@ -71,7 +80,7 @@
   function stationWindToArrowSegments(
     rows: LatestRow[],
     zoom: number,
-    bounds: L.LatLngBounds,
+    bounds: L.LatLngBounds
   ): [number, number][][] {
     const points = rows.filter(
       (r) =>
@@ -112,22 +121,27 @@
       }
       const tipLon = lon + dLon;
       const tipLat = lat + dLat;
-      segments.push([[lat, lon], [tipLat, tipLon]]);
+      segments.push([
+        [lat, lon],
+        [tipLat, tipLon],
+      ]);
 
       const len = Math.hypot(dLon, dLat);
       if (Number.isFinite(len) && len > 1e-6) {
         const ux = dLon / len;
         const uy = dLat / len;
-        const back = HEAD_BACK_DEG;
-        const wing = HEAD_WING_DEG;
-        const bx = ux * back;
-        const by = uy * back;
-        const px = -uy * wing;
-        const py = ux * wing;
-        const left: [number, number] = [tipLat - by + py, tipLon - bx + px];
-        const right: [number, number] = [tipLat - by - py, tipLon - bx - px];
-        segments.push([[tipLat, tipLon], left]);
-        segments.push([[tipLat, tipLon], right]);
+        const bx = ux * HEAD_BACK_DEG;
+        const by = uy * HEAD_BACK_DEG;
+        const px = -uy * HEAD_WING_DEG;
+        const py = ux * HEAD_WING_DEG;
+        segments.push([
+          [tipLat, tipLon],
+          [tipLat - by + py, tipLon - bx + px],
+        ]);
+        segments.push([
+          [tipLat, tipLon],
+          [tipLat - by - py, tipLon - bx - px],
+        ]);
       }
     }
     return segments;
@@ -145,9 +159,13 @@
     const segs = stationWindToArrowSegments(latestWithNames, zoom, bounds);
     for (const seg of segs) {
       if (seg.length < 2) continue;
-      L.polyline(seg, { color: '#fff', weight: 3, opacity: 0.95, pane: 'windPane' }).addTo(
-        windArrowLayer!
-      );
+      L.polyline(seg, {
+        color: '#0d47a1',
+        weight: 3.5,
+        opacity: 1,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }).addTo(windArrowLayer!);
     }
   }
 
@@ -184,6 +202,61 @@
     }
   }
 
+  function convergenceKey(): string {
+    const samples = extractWindSamples(latestWithNames);
+    const b = `${bboxForMap.minLon.toFixed(4)},${bboxForMap.minLat.toFixed(4)},${bboxForMap.maxLon.toFixed(4)},${bboxForMap.maxLat.toFixed(4)}`;
+    const sig = samples
+      .map((s) => `${s.lat.toFixed(4)},${s.lon.toFixed(4)},${s.u.toFixed(3)},${s.v.toFixed(3)}`)
+      .join('|');
+    return `${b}#${samples.length}#${sig}`;
+  }
+
+  function ensureConvergenceCache() {
+    const key = convergenceKey();
+    if (key === convergenceCacheKey) return;
+    convergenceCacheKey = key;
+    const samples = extractWindSamples(latestWithNames);
+    if (samples.length < 2) {
+      cachedLines = [];
+      cachedPolygons = [];
+      return;
+    }
+    const { lines, polygons } = buildConvergenceOverlay(samples, bboxForMap);
+    cachedLines = lines;
+    cachedPolygons = polygons;
+  }
+
+  function updateConvergenceLayer() {
+    if (!map) return;
+    ensureConvergenceCache();
+    if (convergenceLayer) {
+      convergenceLayer.clearLayers();
+    } else {
+      convergenceLayer = L.layerGroup().addTo(map);
+    }
+
+    // 等高線が囲む領域（MS 多角形）を半透過塗り → その上に輪郭線
+    for (const poly of cachedPolygons) {
+      if (poly.length < 3) continue;
+      L.polygon(poly, {
+        stroke: false,
+        fillColor: '#c62828',
+        fillOpacity: 0.3,
+        interactive: false,
+        pane: 'convergencePane',
+      }).addTo(convergenceLayer!);
+    }
+    for (const line of cachedLines) {
+      if (line.length < 2) continue;
+      L.polyline(line, {
+        color: '#b71c1c',
+        weight: 2.5,
+        opacity: 0.95,
+        pane: 'convergencePane',
+      }).addTo(convergenceLayer!);
+    }
+  }
+
   function fitToBbox() {
     if (!map || !bboxForMap) return;
     const bounds = L.latLngBounds(
@@ -195,8 +268,11 @@
 
   $: if (map) {
     void latestWithNames.length;
+    void latestWithNames;
+    void bboxForMap;
     updateWindArrowLayer();
     updateStationLayer();
+    updateConvergenceLayer();
   }
 
   $: if (map && bboxForMap) {
@@ -204,15 +280,18 @@
     if (k !== lastFittedBboxKey) {
       lastFittedBboxKey = k;
       fitToBbox();
+      convergenceCacheKey = '';
+      updateConvergenceLayer();
     }
   }
 
   onMount(() => {
+    // 塗りつぶしポリゴンは SVG の方が安定
     map = L.map(mapContainer, {
-      preferCanvas: true,
+      preferCanvas: false,
     });
-    map.createPane('windPane');
-    map.getPane('windPane')!.style.zIndex = '650';
+    map.createPane('convergencePane');
+    map.getPane('convergencePane')!.style.zIndex = '450';
     map.createPane('stationPane');
     map.getPane('stationPane')!.style.zIndex = '600';
     L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/blank/{z}/{x}/{y}.png', {
@@ -222,9 +301,11 @@
     }).addTo(map);
 
     fitToBbox();
+    updateConvergenceLayer();
     updateWindArrowLayer();
     updateStationLayer();
 
+    // 風矢印の頭サイズのみビューに合わせて更新。収束場はパンで再計算しない
     map.on('moveend', updateWindArrowLayer);
     map.on('zoomend', updateWindArrowLayer);
 
@@ -254,11 +335,12 @@
     map = null;
     windArrowLayer = null;
     stationLayer = null;
+    convergenceLayer = null;
   });
 </script>
 
 <section class="section map-section" bind:this={panelRoot}>
-  <h2>{prefName} OX 分布（測定局）</h2>
+  <h2>{prefName} OX 分布・収束線</h2>
   {#if datetime}
     <p class="map-datetime">対象時刻: {datetime}</p>
   {/if}
@@ -271,7 +353,7 @@
     <div class="map-leaflet" bind:this={mapContainer}></div>
   </div>
   <p class="map-legend">
-    階調: 低（緑）→ 高（赤）。〇は測定局。風速・風向を測定している局では白い矢印（向き=風向、長さ=1時間の移動量）を表示。
+    階調: 低（緑）→ 高（赤）。〇は測定局。青い矢印は風向・風速。半透過の赤は風の収束が強い領域（等高線の内側）、濃い赤線はその輪郭（県範囲・z14 相当格子で固定）。
   </p>
 </section>
 
