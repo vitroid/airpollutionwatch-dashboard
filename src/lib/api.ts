@@ -131,6 +131,59 @@ export async function fetchLatest(
   return get<LatestResponse>('/v1/latest', { pref, items });
 }
 
+/** /v1/measurements?format=snapshot の局1件（測定項目はカラム直下） */
+export interface SnapshotStationPoint {
+  station_id: string;
+  target_datetime: string;
+  observed_datetime: string;
+  [key: string]: string | number | null | undefined;
+}
+
+export interface SnapshotResponse {
+  target_datetime: string;
+  data: SnapshotStationPoint[];
+  spec: Record<string, unknown>;
+}
+
+function snapshotToLatest(res: SnapshotResponse): LatestResponse {
+  const metaKeys = new Set(['station_id', 'target_datetime', 'observed_datetime']);
+  const stations: LatestStationValues[] = res.data.map((pt) => {
+    const values: Record<string, number | null> = {};
+    for (const [k, v] of Object.entries(pt)) {
+      if (metaKeys.has(k)) continue;
+      if (v == null || v === '') {
+        values[k] = null;
+      } else if (typeof v === 'number') {
+        values[k] = Number.isFinite(v) ? v : null;
+      } else {
+        const n = Number(v);
+        values[k] = Number.isFinite(n) ? n : null;
+      }
+    }
+    return { station_id: String(pt.station_id), values };
+  });
+  return { datetime: res.target_datetime, stations };
+}
+
+/**
+ * 指定正時のスナップショット（地図・表向け）。
+ * format=snapshot かつ from=to で、各局の当該時刻以前の最新値を返す。
+ */
+export async function fetchMeasurementsSnapshot(
+  pref: string,
+  hourIso: string,
+  items: string = 'ox,nox,no2,pm25,temp,hum,wd,ws'
+): Promise<LatestResponse> {
+  const res = await get<SnapshotResponse>('/v1/measurements', {
+    pref,
+    from: hourIso,
+    to: hourIso,
+    items,
+    format: 'snapshot',
+  });
+  return snapshotToLatest(res);
+}
+
 /** 測定局一覧（県・測定項目で絞り込み） */
 export async function fetchStations(
   pref: string,

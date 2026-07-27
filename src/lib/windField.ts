@@ -43,6 +43,27 @@ const MAX_CELLS_PER_SIDE = 96;
 const MIN_CELLS_PER_SIDE = 8;
 
 /**
+ * 収束帯の基準絶対閾値（1/s）。
+ * 等高線は基準の 1/2・1・2 倍の3段階を描く。
+ * 目安: 局間 ~10 km・風差 ~1 m/s → ~1×10⁻⁴ /s。
+ */
+export const ABS_CONVERGENCE_THRESHOLD = 1e-4;
+
+/** 弱い→強いの3段階（基準の 1/2, 1, 2 倍） */
+export const ABS_CONVERGENCE_LEVELS: readonly number[] = [
+  ABS_CONVERGENCE_THRESHOLD * 0.5,
+  ABS_CONVERGENCE_THRESHOLD,
+  ABS_CONVERGENCE_THRESHOLD * 2,
+];
+
+/** 1閾値分の収束帯（線＋塗り） */
+export interface ConvergenceBand {
+  level: number;
+  lines: ConvergenceLine[];
+  polygons: ConvergencePolygon[];
+}
+
+/**
  * 旧形式 wd(1–16) + ws(0.1 m/s) を東向き/北向き成分 (m/s) に変換。
  * MapPanelLeaflet と同じ「風が吹いていく向き」定義。
  */
@@ -157,11 +178,74 @@ function idwAt(
   return null;
 }
 
+/**
+ * Adaptive IDW: 近い順に少なくとも minNeighbors 局を使い、
+ * それより遠い局は maxRadiusKm 以内なら追加しない（k-NN 型）。
+ * 疎な海域でも穴が空きにくく、密な陸上では自然に短い影響半径になる。
+ */
+function idwAtAdaptive(
+  samples: WindSample[],
+  lat: number,
+  lon: number,
+  options: { minNeighbors: number; maxRadiusKm: number }
+): { u: number; v: number } | null {
+  const { minNeighbors, maxRadiusKm } = options;
+  const ranked: { d: number; u: number; v: number }[] = [];
+  for (const s of samples) {
+    const d = haversineKm(lat, lon, s.lat, s.lon);
+    if (d > maxRadiusKm) continue;
+    if (d < 1e-6) {
+      return { u: s.u, v: s.v };
+    }
+    ranked.push({ d, u: s.u, v: s.v });
+  }
+  if (ranked.length === 0) return null;
+  ranked.sort((a, b) => a.d - b.d);
+
+  // 近い minNeighbors 局は必ず使う。k 番目より遠い局は使わない。
+  const k = Math.min(Math.max(1, minNeighbors), ranked.length);
+  const cutoff = ranked[k - 1].d;
+  let wSum = 0;
+  let uSum = 0;
+  let vSum = 0;
+  for (const s of ranked) {
+    if (s.d > cutoff + 1e-9) break;
+    const w = 1 / s.d ** IDW_POWER;
+    wSum += w;
+    uSum += w * s.u;
+    vSum += w * s.v;
+  }
+  if (wSum <= 0) return null;
+  return { u: uSum / wSum, v: vSum / wSum };
+}
+
+/** adaptive IDW の既定（最低 4 局・上限 80 km） */
+export const ADAPTIVE_IDW_DEFAULTS = {
+  minNeighbors: 4,
+  maxRadiusKm: 80,
+} as const;
+
 /** サンプル点から IDW でグリッドベクトル場を作る（格子間隔は z14 タイル相当で固定） */
 export function interpolateVectorField(
   samples: WindSample[],
   bbox: BBox,
-  options?: { cellDeg?: number; maxCellsPerSide?: number }
+  options?: {
+    cellDeg?: number;
+    maxCellsPerSide?: number;
+    /** 近傍半径 (km) を直接指定。未指定なら格子間隔から算出（下限 minRadiusKm） */
+    radiusKm?: number;
+    /** 固定半径モードの下限 (km)。大気測定局密度向け既定 20 km */
+    minRadiusKm?: number;
+    /**
+     * true のとき adaptive IDW（近い順に minNeighbors 局）。
+     * 疎密に応じて実効半径が変わる。未指定時は false（固定半径）。
+     */
+    adaptive?: boolean;
+    /** adaptive 時: 最低利用局数（既定 4） */
+    minNeighbors?: number;
+    /** adaptive 時: 探索上限 km（既定 80） */
+    maxRadiusKm?: number;
+  }
 ): VectorGrid | null {
   if (samples.length < 2) return null;
 
@@ -187,13 +271,18 @@ export function interpolateVectorField(
     lats.push(bbox.minLat + (j + 0.5) * stepLat);
   }
 
-  // 近傍半径: 格子間隔の数倍（最低 ~12km）。県外への過大な外挿を抑える
+  const adaptive = options?.adaptive === true;
+  const minNeighbors = options?.minNeighbors ?? ADAPTIVE_IDW_DEFAULTS.minNeighbors;
+  const maxRadiusKm = options?.maxRadiusKm ?? ADAPTIVE_IDW_DEFAULTS.maxRadiusKm;
+
+  // 固定半径モード: 格子間隔の数倍（下限 minRadiusKm）。大気測定局密度向け既定 20 km。
   const midLat = (bbox.minLat + bbox.maxLat) / 2;
   const cosLat = Math.max(0.2, Math.cos((midLat * Math.PI) / 180));
   const cellKm =
     0.5 *
     (KM_PER_DEG_LAT * stepLat + KM_PER_DEG_LAT * cosLat * stepLon);
-  const radiusKm = Math.max(cellKm * 3.5, 12);
+  const minRadiusKm = options?.minRadiusKm ?? 20;
+  const radiusKm = options?.radiusKm ?? Math.max(cellKm * 3.5, minRadiusKm);
 
   const u: (number | null)[][] = [];
   const v: (number | null)[][] = [];
@@ -201,7 +290,9 @@ export function interpolateVectorField(
     const rowU: (number | null)[] = [];
     const rowV: (number | null)[] = [];
     for (let i = 0; i < nLon; i++) {
-      const res = idwAt(samples, lats[j], lons[i], radiusKm);
+      const res = adaptive
+        ? idwAtAdaptive(samples, lats[j], lons[i], { minNeighbors, maxRadiusKm })
+        : idwAt(samples, lats[j], lons[i], radiusKm);
       if (res) {
         rowU.push(res.u);
         rowV.push(res.v);
@@ -217,7 +308,10 @@ export function interpolateVectorField(
   return { nLat, nLon, lats, lons, u, v };
 }
 
-/** メートル系で発散 (1/s 相当、u/v が m/s のとき) を計算。欠損は null */
+/**
+ * 局所直交座標（東=x, 北=y）での水平発散 ∇·V = ∂u/∂x + ∂v/∂y (1/s)。
+ * u,v は m/s、dx/dy は隣接点間の地理距離 (m)。中央差分。
+ */
 export function computeDivergence(grid: VectorGrid): (number | null)[][] {
   const { nLat, nLon, lats, lons, u, v } = grid;
   const div: (number | null)[][] = Array.from({ length: nLat }, () =>
@@ -234,10 +328,10 @@ export function computeDivergence(grid: VectorGrid): (number | null)[][] {
       if (u[j][i] == null || v[j][i] == null) continue;
 
       const lat = lats[j];
-      const cosLat = Math.max(0.2, Math.cos((lat * Math.PI) / 180));
-      const dx =
-        ((lons[i + 1] - lons[i - 1]) * KM_PER_DEG_LAT * cosLat * 1000) || 1e-6;
-      const dy = ((lats[j + 1] - lats[j - 1]) * KM_PER_DEG_LAT * 1000) || 1e-6;
+      const lon = lons[i];
+      // 東西・南北の実距離 (m)。haversine で風向成分に対する正しい尺度にする
+      const dx = Math.max(haversineKm(lat, lons[i - 1], lat, lons[i + 1]) * 1000, 1e-3);
+      const dy = Math.max(haversineKm(lats[j - 1], lon, lats[j + 1], lon) * 1000, 1e-3);
       const duDx = (uR - uL) / dx;
       const dvDy = (vN - vS) / dy;
       div[j][i] = duDx + dvDy;
@@ -246,13 +340,102 @@ export function computeDivergence(grid: VectorGrid): (number | null)[][] {
   return div;
 }
 
-function percentile(sortedAsc: number[], p: number): number {
-  if (sortedAsc.length === 0) return 0;
-  const idx = Math.min(
-    sortedAsc.length - 1,
-    Math.max(0, Math.floor((p / 100) * (sortedAsc.length - 1)))
+function gridSpacingMeters(grid: VectorGrid): { dx: number; dy: number } {
+  const midJ = Math.floor(grid.nLat / 2);
+  const midI = Math.floor(grid.nLon / 2);
+  const lat = grid.lats[midJ];
+  const lon = grid.lons[midI];
+  const dx =
+    grid.nLon > 1
+      ? haversineKm(lat, grid.lons[0], lat, grid.lons[grid.nLon - 1]) *
+        1000 /
+        (grid.nLon - 1)
+      : 1;
+  const dy =
+    grid.nLat > 1
+      ? haversineKm(grid.lats[0], lon, grid.lats[grid.nLat - 1], lon) *
+        1000 /
+        (grid.nLat - 1)
+      : 1;
+  return {
+    dx: Math.max(dx, 1e-3),
+    dy: Math.max(dy, 1e-3),
+  };
+}
+
+/**
+ * Helmholtz–Hodge 分解の非回転（発散）成分を得る。
+ *
+ *   V = ∇φ + Vrot,  ∇²φ = ∇·V
+ *
+ * Poisson 方程式を有限差分 SOR 法（外周 φ=0）で解き、∇φ のみを返す。
+ * これにより渦度を持つ回転成分と一様な調和成分は描画場から除外される。
+ * 欠損セルは領域外として扱い、出力も null のままにする。
+ */
+export function extractDivergentComponent(
+  grid: VectorGrid,
+  options?: { iterations?: number; tolerance?: number }
+): VectorGrid {
+  const divergence = computeDivergence(grid);
+  const { nLat, nLon } = grid;
+  const { dx, dy } = gridSpacingMeters(grid);
+  const invDx2 = 1 / (dx * dx);
+  const invDy2 = 1 / (dy * dy);
+  const denominator = 2 * invDx2 + 2 * invDy2;
+  const iterations = options?.iterations ?? 600;
+  const tolerance = options?.tolerance ?? 1e-5;
+  const relaxation = 1.7;
+
+  const phi: number[][] = Array.from({ length: nLat }, () =>
+    Array.from({ length: nLon }, () => 0)
   );
-  return sortedAsc[idx];
+
+  for (let iteration = 0; iteration < iterations; iteration++) {
+    let maxDelta = 0;
+    let maxAbs = 0;
+
+    for (let j = 1; j < nLat - 1; j++) {
+      for (let i = 1; i < nLon - 1; i++) {
+        const rhs = divergence[j][i];
+        if (rhs == null) continue;
+        const target =
+          ((phi[j][i - 1] + phi[j][i + 1]) * invDx2 +
+            (phi[j - 1][i] + phi[j + 1][i]) * invDy2 -
+            rhs) /
+          denominator;
+        const value = phi[j][i] + relaxation * (target - phi[j][i]);
+        maxDelta = Math.max(maxDelta, Math.abs(value - phi[j][i]));
+        maxAbs = Math.max(maxAbs, Math.abs(value));
+        phi[j][i] = value;
+      }
+    }
+
+    if (maxDelta <= tolerance * Math.max(1, maxAbs)) break;
+  }
+
+  const u: (number | null)[][] = Array.from({ length: nLat }, () =>
+    Array.from({ length: nLon }, () => null)
+  );
+  const v: (number | null)[][] = Array.from({ length: nLat }, () =>
+    Array.from({ length: nLon }, () => null)
+  );
+
+  for (let j = 1; j < nLat - 1; j++) {
+    for (let i = 1; i < nLon - 1; i++) {
+      if (divergence[j][i] == null) continue;
+      u[j][i] = (phi[j][i + 1] - phi[j][i - 1]) / (2 * dx);
+      v[j][i] = (phi[j + 1][i] - phi[j - 1][i]) / (2 * dy);
+    }
+  }
+
+  return {
+    nLat,
+    nLon,
+    lats: [...grid.lats],
+    lons: [...grid.lons],
+    u,
+    v,
+  };
 }
 
 /**
@@ -321,43 +504,26 @@ function cornerVal(field: (number | null)[][], j: number, i: number): number | n
   return field[j]?.[i] ?? null;
 }
 
+/** 収束場 C = −∇·V（正＝収束）。単位 1/s */
 function convergenceFieldFromDivergence(
   divergence: (number | null)[][]
 ): (number | null)[][] {
   return divergence.map((row) => row.map((d) => (d == null ? null : -d)));
 }
 
-function convergenceLevel(
-  field: (number | null)[][],
-  percentileP: number
-): number | null {
-  const strengths: number[] = [];
-  for (const row of field) {
-    for (const c of row) {
-      if (c == null || !Number.isFinite(c) || !(c > 0)) continue;
-      strengths.push(c);
-    }
-  }
-  if (strengths.length < 4) return null;
-  strengths.sort((a, b) => a - b);
-  const level = percentile(strengths, percentileP);
-  return level > 0 ? level : null;
-}
-
 /**
  * 発散場から収束線を抽出。
- * -convergence = -div が強い（発散が負で大きい）領域の等高線。
+ * C = −div が絶対閾値以上の等高線（相対パーセンタイルではない）。
  */
 export function extractConvergenceLines(
   grid: VectorGrid,
   divergence: (number | null)[][],
-  options?: { percentile?: number; minSegmentDeg?: number; level?: number }
+  options?: { minSegmentDeg?: number; level?: number }
 ): ConvergenceLine[] {
-  const p = options?.percentile ?? 80;
   const minSeg = options?.minSegmentDeg ?? 0.02;
   const field = convergenceFieldFromDivergence(divergence);
-  const level = options?.level ?? convergenceLevel(field, p);
-  if (level == null) return [];
+  const level = options?.level ?? ABS_CONVERGENCE_THRESHOLD;
+  if (!(level > 0)) return [];
 
   const segments: [[number, number], [number, number]][] = [];
 
@@ -415,12 +581,11 @@ export function extractConvergenceLines(
 export function extractConvergencePolygons(
   grid: VectorGrid,
   divergence: (number | null)[][],
-  options?: { percentile?: number; level?: number }
+  options?: { level?: number }
 ): ConvergencePolygon[] {
-  const p = options?.percentile ?? 80;
   const field = convergenceFieldFromDivergence(divergence);
-  const level = options?.level ?? convergenceLevel(field, p);
-  if (level == null) return [];
+  const level = options?.level ?? ABS_CONVERGENCE_THRESHOLD;
+  if (!(level > 0)) return [];
 
   const polygons: ConvergencePolygon[] = [];
 
@@ -519,17 +684,16 @@ export function extractConvergencePolygons(
 }
 
 /**
- * 線と塗りを同じ閾値でまとめて抽出
+ * 線と塗りを同じ絶対閾値でまとめて抽出。
+ * level 未指定時は ABS_CONVERGENCE_THRESHOLD (1/s)。
  */
 export function extractConvergenceFeatures(
   grid: VectorGrid,
   divergence: (number | null)[][],
-  options?: { percentile?: number; minSegmentDeg?: number }
+  options?: { minSegmentDeg?: number; level?: number }
 ): { lines: ConvergenceLine[]; polygons: ConvergencePolygon[]; level: number | null } {
-  const p = options?.percentile ?? 80;
-  const field = convergenceFieldFromDivergence(divergence);
-  const level = convergenceLevel(field, p);
-  if (level == null) {
+  const level = options?.level ?? ABS_CONVERGENCE_THRESHOLD;
+  if (!(level > 0)) {
     return { lines: [], polygons: [], level: null };
   }
   const lines = extractConvergenceLines(grid, divergence, {
@@ -538,6 +702,28 @@ export function extractConvergenceFeatures(
   });
   const polygons = extractConvergencePolygons(grid, divergence, { level });
   return { lines, polygons, level };
+}
+
+/**
+ * 複数絶対閾値で収束帯を抽出（弱い→強いの順）。
+ * levels 未指定時は ABS_CONVERGENCE_LEVELS（基準の 1/2・1・2 倍）。
+ */
+export function extractConvergenceBands(
+  grid: VectorGrid,
+  divergence: (number | null)[][],
+  options?: { minSegmentDeg?: number; levels?: readonly number[] }
+): ConvergenceBand[] {
+  const levels = options?.levels ?? ABS_CONVERGENCE_LEVELS;
+  const bands: ConvergenceBand[] = [];
+  for (const level of levels) {
+    if (!(level > 0)) continue;
+    const { lines, polygons } = extractConvergenceFeatures(grid, divergence, {
+      minSegmentDeg: options?.minSegmentDeg,
+      level,
+    });
+    bands.push({ level, lines, polygons });
+  }
+  return bands;
 }
 function approxEq(a: [number, number], b: [number, number], eps = 1e-7): boolean {
   return Math.abs(a[0] - b[0]) < eps && Math.abs(a[1] - b[1]) < eps;
@@ -627,32 +813,68 @@ export function subsampleArrows(grid: VectorGrid, stride = 2): ArrowSample[] {
   return out;
 }
 
-/** 解析範囲（県 bbox 等）でサンプル→場→収束線／塗りまで計算。格子は z14 相当で固定 */
+/**
+ * 解析範囲（県 bbox 等）でサンプル→場→Helmholtz 分解→収束線／塗りまで計算。
+ * 格子は z14 相当で固定。矢印には非回転成分のみを返す。
+ */
 export function buildConvergenceOverlay(
   samples: WindSample[],
-  analysisBBox: BBox
+  analysisBBox: BBox,
+  options?: {
+    gridArrowStride?: number;
+    minRadiusKm?: number;
+    /** adaptive IDW（k-NN）。true で疎密に応じた実効半径 */
+    adaptive?: boolean;
+    minNeighbors?: number;
+    maxRadiusKm?: number;
+  }
 ): {
   grid: VectorGrid | null;
   arrows: ArrowSample[];
+  /** 弱い→強いの3段階（基準の 1/2・1・2 倍） */
+  bands: ConvergenceBand[];
+  /** 互換: 基準閾値の線（bands 中央） */
   lines: ConvergenceLine[];
+  /** 互換: 基準閾値の塗り（bands 中央） */
   polygons: ConvergencePolygon[];
 } {
   if (samples.length < 2) {
-    return { grid: null, arrows: [], lines: [], polygons: [] };
+    return { grid: null, arrows: [], bands: [], lines: [], polygons: [] };
   }
   // わずかな余白のみ（viewport 追従はしない）
   const bbox = padBBox(analysisBBox, 0.02);
-  const grid = interpolateVectorField(samples, bbox);
+  const grid = interpolateVectorField(samples, bbox, {
+    minRadiusKm: options?.minRadiusKm,
+    adaptive: options?.adaptive,
+    minNeighbors: options?.minNeighbors,
+    maxRadiusKm: options?.maxRadiusKm,
+  });
   if (!grid) {
-    return { grid: null, arrows: [], lines: [], polygons: [] };
+    return { grid: null, arrows: [], bands: [], lines: [], polygons: [] };
   }
+  // Helmholtz–Hodge 分解: 速度ポテンシャルの勾配だけを残し、渦度成分を捨てる。
+  const divergentGrid = extractDivergentComponent(grid);
+
+  // 発散は回転成分に依存しない。等高線は離散誤差の少ない元の発散を使い、
+  // 補間矢印には上で射影した非回転成分を使う。
   const div = computeDivergence(grid);
-  const { lines, polygons } = extractConvergenceFeatures(grid, div, {
+  const bands = extractConvergenceBands(grid, div, {
     // z14 格子では短い線分でも地理的に意味があるので閾値を下げる
     minSegmentDeg: ZOOM14_CELL_DEG * 0.75,
   });
-  // 格子が細かいので間引き
-  const stride = Math.max(2, Math.round(Math.max(grid.nLat, grid.nLon) / 28));
-  const arrows = subsampleArrows(grid, stride);
-  return { grid, arrows, lines, polygons };
+  const mid = bands.find((b) => b.level === ABS_CONVERGENCE_THRESHOLD) ?? bands[1] ?? {
+    level: ABS_CONVERGENCE_THRESHOLD,
+    lines: [],
+    polygons: [],
+  };
+  const autoStride = Math.max(2, Math.round(Math.max(grid.nLat, grid.nLon) / 28));
+  const stride = options?.gridArrowStride ?? autoStride;
+  const arrows = subsampleArrows(divergentGrid, stride);
+  return {
+    grid: divergentGrid,
+    arrows,
+    bands,
+    lines: mid.lines,
+    polygons: mid.polygons,
+  };
 }

@@ -1,0 +1,356 @@
+{
+    "hokkaido": [
+      "akita",
+      "aomori",
+      "fukuoka",
+      "ishikawa",
+      "iwate",
+      "shimane"
+    ],
+    "aomori": [
+      "akita",
+      "hokkaido",
+      "iwate"
+    ],
+    "iwate": [
+      "akita",
+      "aomori",
+      "hokkaido",
+      "miyagi"
+    ],
+    "miyagi": [
+      "akita",
+      "fukushima",
+      "ibaraki",
+      "iwate",
+      "yamagata"
+    ],
+    "akita": [
+      "aomori",
+      "hokkaido",
+      "ishikawa",
+      "iwate",
+      "miyagi",
+      "niigata",
+      "yamagata"
+    ],
+    "yamagata": [
+      "akita",
+      "fukushima",
+      "miyagi",
+      "niigata"
+    ],
+    "fukushima": [
+      "ibaraki",
+      "miyagi",
+      "niigata",
+      "tochigi",
+      "yamagata"
+    ],
+    "ibaraki": [
+      "chiba",
+      "fukushima",
+      "miyagi",
+      "saitama",
+      "tochigi"
+    ],
+    "tochigi": [
+      "fukushima",
+      "gunma",
+      "ibaraki",
+      "niigata",
+      "saitama"
+    ],
+    "gunma": [
+      "nagano",
+      "niigata",
+      "saitama",
+      "tochigi",
+      "yamanashi"
+    ],
+    "saitama": [
+      "chiba",
+      "gunma",
+      "ibaraki",
+      "kanagawa",
+      "tochigi",
+      "tokyo",
+      "yamanashi"
+    ],
+    "chiba": [
+      "ibaraki",
+      "kanagawa",
+      "okinawa",
+      "saitama",
+      "shizuoka",
+      "tokyo"
+    ],
+    "tokyo": [
+      "chiba",
+      "kanagawa",
+      "saitama"
+    ],
+    "kanagawa": [
+      "chiba",
+      "saitama",
+      "shizuoka",
+      "tokyo",
+      "yamanashi"
+    ],
+    "niigata": [
+      "akita",
+      "fukushima",
+      "gunma",
+      "ishikawa",
+      "nagano",
+      "tochigi",
+      "toyama",
+      "yamagata"
+    ],
+    "toyama": [
+      "aichi",
+      "gifu",
+      "ishikawa",
+      "nagano",
+      "niigata",
+      "yamanashi"
+    ],
+    "ishikawa": [
+      "akita",
+      "fukui",
+      "gifu",
+      "hokkaido",
+      "niigata",
+      "shimane",
+      "tottori",
+      "toyama"
+    ],
+    "fukui": [
+      "gifu",
+      "ishikawa",
+      "kyoto",
+      "shiga",
+      "tottori"
+    ],
+    "yamanashi": [
+      "aichi",
+      "gunma",
+      "kanagawa",
+      "nagano",
+      "saitama",
+      "shizuoka",
+      "toyama"
+    ],
+    "nagano": [
+      "gunma",
+      "niigata",
+      "toyama",
+      "yamanashi"
+    ],
+    "gifu": [
+      "aichi",
+      "fukui",
+      "ishikawa",
+      "mie",
+      "shiga",
+      "toyama"
+    ],
+    "shizuoka": [
+      "aichi",
+      "chiba",
+      "kanagawa",
+      "mie",
+      "miyazaki",
+      "okinawa",
+      "wakayama",
+      "yamanashi"
+    ],
+    "aichi": [
+      "gifu",
+      "mie",
+      "shizuoka",
+      "toyama",
+      "yamanashi"
+    ],
+    "mie": [
+      "aichi",
+      "gifu",
+      "nara",
+      "shiga",
+      "shizuoka",
+      "wakayama"
+    ],
+    "shiga": [
+      "fukui",
+      "gifu",
+      "kyoto",
+      "mie",
+      "nara"
+    ],
+    "kyoto": [
+      "fukui",
+      "hyogo",
+      "nara",
+      "osaka",
+      "shiga",
+      "tottori"
+    ],
+    "osaka": [
+      "hyogo",
+      "kyoto",
+      "nara",
+      "wakayama"
+    ],
+    "hyogo": [
+      "kagawa",
+      "kyoto",
+      "okayama",
+      "osaka",
+      "tokushima",
+      "tottori",
+      "wakayama"
+    ],
+    "nara": [
+      "kyoto",
+      "mie",
+      "osaka",
+      "shiga",
+      "wakayama"
+    ],
+    "wakayama": [
+      "hyogo",
+      "kochi",
+      "mie",
+      "miyazaki",
+      "nara",
+      "osaka",
+      "shizuoka",
+      "tokushima"
+    ],
+    "tottori": [
+      "fukui",
+      "hyogo",
+      "ishikawa",
+      "kyoto",
+      "okayama",
+      "shimane"
+    ],
+    "shimane": [
+      "fukuoka",
+      "hiroshima",
+      "hokkaido",
+      "ishikawa",
+      "okayama",
+      "tottori",
+      "yamaguchi"
+    ],
+    "okayama": [
+      "ehime",
+      "hiroshima",
+      "hyogo",
+      "kagawa",
+      "shimane",
+      "tottori"
+    ],
+    "hiroshima": [
+      "ehime",
+      "okayama",
+      "shimane",
+      "yamaguchi"
+    ],
+    "yamaguchi": [
+      "ehime",
+      "fukuoka",
+      "hiroshima",
+      "oita",
+      "shimane"
+    ],
+    "tokushima": [
+      "hyogo",
+      "kagawa",
+      "kochi",
+      "wakayama"
+    ],
+    "kagawa": [
+      "ehime",
+      "hyogo",
+      "kochi",
+      "okayama",
+      "tokushima"
+    ],
+    "ehime": [
+      "hiroshima",
+      "kagawa",
+      "kochi",
+      "oita",
+      "okayama",
+      "yamaguchi"
+    ],
+    "kochi": [
+      "ehime",
+      "kagawa",
+      "miyazaki",
+      "oita",
+      "tokushima",
+      "wakayama"
+    ],
+    "fukuoka": [
+      "hokkaido",
+      "kumamoto",
+      "nagasaki",
+      "oita",
+      "saga",
+      "shimane",
+      "yamaguchi"
+    ],
+    "saga": [
+      "fukuoka",
+      "kumamoto",
+      "nagasaki"
+    ],
+    "nagasaki": [
+      "fukuoka",
+      "kagoshima",
+      "kumamoto",
+      "okinawa",
+      "saga"
+    ],
+    "kumamoto": [
+      "fukuoka",
+      "kagoshima",
+      "miyazaki",
+      "nagasaki",
+      "oita",
+      "saga"
+    ],
+    "oita": [
+      "ehime",
+      "fukuoka",
+      "kochi",
+      "kumamoto",
+      "miyazaki",
+      "yamaguchi"
+    ],
+    "miyazaki": [
+      "kagoshima",
+      "kochi",
+      "kumamoto",
+      "oita",
+      "okinawa",
+      "shizuoka",
+      "wakayama"
+    ],
+    "kagoshima": [
+      "kumamoto",
+      "miyazaki",
+      "nagasaki",
+      "okinawa"
+    ],
+    "okinawa": [
+      "chiba",
+      "kagoshima",
+      "miyazaki",
+      "nagasaki",
+      "shizuoka"
+    ]
+  }

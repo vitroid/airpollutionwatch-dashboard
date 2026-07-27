@@ -44,11 +44,11 @@ h1 {
   padding: 0;
 }
 
-/* ダッシュボードの main：幅・余白をグローバルで保証（プレビューでも効くように） */
+/* ダッシュボードの main：全幅・余白をグローバルで保証（プレビューでも効くように） */
 #app > main {
-  max-width: 1400px;
-  margin-left: auto;
-  margin-right: auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   padding: 24px;
   box-sizing: border-box;
 }

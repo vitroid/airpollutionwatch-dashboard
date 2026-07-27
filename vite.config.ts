@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => {
       // - ローカル: ../airpollutionwatch-api/dashboard/dist
       // - API リポジトリ側の FastAPI がこのディレクトリをそのまま配信する
       outDir: '../airpollutionwatch-api/dashboard/dist',
+      // outDir がプロジェクト外のため既定では空にされない。古いハッシュ付き JS が残ると
+      // index.html 更新とブラウザキャッシュの取り違えが起きやすいので明示的に空にする。
+      emptyOutDir: true,
     },
     server: {
       proxy: {
